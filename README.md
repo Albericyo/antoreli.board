@@ -14,6 +14,8 @@ Application web pour gérer des plans vidéo : import de reels, découpe avec ma
 
 L’application fonctionne entièrement dans le navigateur, sans backend ni compte utilisateur. Les métadonnées (catégories, clips, validations) sont conservées dans le stockage local du navigateur.
 
+**Utilisation sur Windows** : placez le projet sur un disque local (`C:\`, `D:\`, etc.), double-cliquez sur `start.bat`. Aucun WSL requis.
+
 ---
 
 ## Fonctionnalités
@@ -75,14 +77,14 @@ L’application utilise des **modules ES6** (`import`/`export`). Le navigateur i
 
 | Fichier   | Usage                                                                 |
 |-----------|-----------------------------------------------------------------------|
-| `start.bat` | **Windows** : double-clic pour lancer le serveur et ouvrir le navigateur |
-| `start.sh`  | **Linux / WSL** : `./start.sh` ou `bash start.sh` dans un terminal     |
+| `start.bat` | **Windows** : double-clic sur `start.bat` → serveur + navigateur. Placez le projet sur `C:\` ou `D:\` (pas de WSL requis) |
+| `start.sh`  | **Linux / Mac** : `./start.sh` ou `bash start.sh` dans un terminal     |
 
-`start.bat` ouvre une fenêtre de serveur et le navigateur automatiquement. `start.sh` lance le serveur dans le terminal (Ctrl+C pour arrêter). Les deux utilisent Python si disponible.
+**Prérequis Windows** : Python ([python.org](https://python.org)) ou Node.js ([nodejs.org](https://nodejs.org)). `start.bat` essaie Python d’abord, puis Node.js automatiquement.
 
 ### Démarrage manuel
 
-1. **Cloner ou récupérer le projet** : `cd /srv/antoreli`
+1. **Placer le projet** sur votre disque (ex. `C:\Users\Vous\antoreli` ou `D:\projets\antoreli`)
 
 2. **Lancer un serveur HTTP local**
 
