@@ -71,13 +71,20 @@ Les **catégories** et **clips** (noms, IN/OUT, catégories, validations) sont s
 
 L’application utilise des **modules ES6** (`import`/`export`). Le navigateur impose qu’ils soient servis via HTTP (pas `file://`).
 
-### 1. Cloner ou récupérer le projet
+### Démarrage rapide (scripts fournis)
 
-```bash
-cd /srv/antoreli
-```
+| Fichier   | Usage                                                                 |
+|-----------|-----------------------------------------------------------------------|
+| `start.bat` | **Windows** : double-clic pour lancer le serveur et ouvrir le navigateur |
+| `start.sh`  | **Linux / WSL** : `./start.sh` ou `bash start.sh` dans un terminal     |
 
-### 2. Lancer un serveur HTTP local
+`start.bat` ouvre une fenêtre de serveur et le navigateur automatiquement. `start.sh` lance le serveur dans le terminal (Ctrl+C pour arrêter). Les deux utilisent Python si disponible.
+
+### Démarrage manuel
+
+1. **Cloner ou récupérer le projet** : `cd /srv/antoreli`
+
+2. **Lancer un serveur HTTP local**
 
 **Python 3 :**
 ```bash
@@ -94,7 +101,7 @@ npx serve
 php -S localhost:8765
 ```
 
-### 3. Ouvrir dans le navigateur
+3. **Ouvrir dans le navigateur**
 
 ```
 http://localhost:8765
@@ -115,6 +122,8 @@ Firefox et Safari bloquent généralement l’exécution des modules ES6 en `fil
 antoreli/
 ├── index.html          # Point d'entrée HTML
 ├── app.html            # Variante (si présente)
+├── start.bat           # Démarrage rapide (Windows)
+├── start.sh            # Démarrage rapide (Linux / WSL)
 ├── css/
 │   └── styles.css      # Feuilles de style
 ├── js/
