@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Shooting Board</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:#0a0a0a;color:#f0f0f0;min-height:100vh;}
+:root{
+  --s1:#161616;--s2:#1e1e1e;--s3:#2a2a2a;
+  --b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.15);
+  --t1:#f0f0f0;--t2:#888;--t3:#444;
+  --green:#4ade80;--gbg:rgba(74,222,128,0.12);--gbd:rgba(74,222,128,0.45);
+  --bbg:rgba(122,171,255,0.1);--bt:#7aabff;
+  --wbg:rgba(255,179,71,0.15);--wt:#ffb347;
+  --r:10px;--rs:6px;
+}
+#app{max-width:940px;margin:0 auto;padding:1.25rem 1rem;}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;}
+.logo{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);}
+.sname{font-size:14px;border:none;background:transparent;color:var(--t1);font-family:inherit;padding:4px 6px;border-radius:var(--rs);border:1px solid transparent;}
+.sname:focus{outline:none;border-color:var(--b2);background:var(--s2);}
+
+/* nav tabs */
+.nav{display:flex;gap:4px;background:var(--s2);padding:4px;border-radius:12px;margin-bottom:1.25rem;}
+.nb{flex:1;font-size:13px;font-weight:500;padding:8px;border-radius:9px;border:none;background:transparent;color:var(--t2);cursor:pointer;}
+.nb.on{background:var(--s3);color:var(--t1);}
+.nb:hover:not(.on){color:var(--t1);}
+
+/* pages */
+.page{display:none;}.page.on{display:block;}
+
+/* cards */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:1.25rem;margin-bottom:12px;}
+.ctitle{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+@media(max-width:600px){.two{grid-template-columns:1fr;}}
+
+/* buttons */
+.btn{font-size:13px;font-weight:500;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--b2);background:var(--s2);color:var(--t1);cursor:pointer;white-space:nowrap;font-family:inherit;}
+.btn:hover{background:var(--s3);}
+.btn:active{transform:scale(.98);}
+.btn-w{background:#fff;color:#0a0a0a;border-color:#fff;}
+.btn-w:hover{background:#e0e0e0;}
+.btn-g{background:var(--green);color:#0a0a0a;border-color:var(--green);}
+.btn-sm{font-size:12px;padding:5px 10px;}
+
+/* inputs */
+input[type=text],input[type=number],select,textarea{font-size:13px;padding:7px 10px;border-radius:var(--rs);border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-family:inherit;outline:none;}
+input:focus,select:focus{border-color:#fff;}
+input::placeholder{color:var(--t3);}
+
+/* badges */
+.badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;}
+.b-warn{background:var(--wbg);color:var(--wt);}
+
+.empty{font-size:12px;color:var(--t3);text-align:center;padding:1.5rem 0;}
+.hint{font-size:11px;color:var(--t3);margin-top:6px;line-height:1.5;}
+.del{color:var(--t3);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;}
+.del:hover{color:#f87171;}
+
+/* ── PAGE IMPORT ── */
+.upload-label{display:block;border:1.5px dashed var(--b2);border-radius:var(--rs);padding:1.75rem 1rem;text-align:center;cursor:pointer;color:var(--t2);font-size:13px;}
+.upload-label:hover{background:var(--s2);border-color:var(--t2);}
+.cats-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.cpill{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 10px;border-radius:14px;background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
+.cpill .x{cursor:pointer;color:var(--t3);font-size:15px;}
+.cpill .x:hover{color:var(--t1);}
+.ritem{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);cursor:pointer;margin-bottom:6px;}
+.ritem:hover{border-color:var(--b2);}
+.ritem.sel{border-color:#fff;}
+.rthumb{width:40px;height:40px;border-radius:8px;background:var(--bbg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.rinfo{flex:1;min-width:0;}
+.rname{font-weight:500;color:var(--t1);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rmeta{font-size:11px;color:var(--t2);margin-top:2px;}
+
+/* ── PAGE CUT ── */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:1rem;}
+.tab{font-size:12px;padding:5px 14px;border-radius:14px;border:1px solid var(--b2);background:var(--s1);color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.tab.on{background:#fff;color:#0a0a0a;border-color:#fff;}
+.tab:hover:not(.on){color:var(--t1);}
+
+.pwrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;margin-bottom:1rem;}
+.pscreen{background:#000;display:flex;align-items:center;justify-content:center;min-height:260px;position:relative;}
+#vid{width:100%;max-height:400px;display:block;cursor:pointer;}
+#vmsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--t2);font-size:13px;text-align:center;padding:1rem;}
+.pctrl{padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid var(--b1);}
+.ppbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--b2);background:var(--s2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;}
+.ppbtn:hover{background:var(--s3);}
+.tc{font-size:12px;color:var(--t2);min-width:90px;font-variant-numeric:tabular-nums;}
+.pbar{flex:1;position:relative;height:28px;cursor:pointer;}
+.pbg{position:absolute;top:12px;left:0;right:0;height:4px;background:var(--s3);border-radius:2px;}
+.pfill{position:absolute;top:12px;left:0;height:4px;background:#fff;border-radius:2px;width:0%;}
+.pmarks{position:absolute;top:12px;left:0;right:0;height:4px;pointer-events:none;}
+.mseg{position:absolute;height:4px;background:var(--green);opacity:.75;border-radius:2px;}
+.phead{position:absolute;top:4px;width:14px;height:14px;background:#fff;border-radius:50%;transform:translateX(-50%);left:0%;border:2px solid #0a0a0a;pointer-events:none;}
+
+.toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+.mbtn{font-size:12px;font-weight:600;padding:7px 14px;border-radius:var(--rs);border:1px solid var(--b2);background:var(--s2);color:var(--t2);cursor:pointer;font-family:'Menlo',monospace;}
+.mbtn:hover{color:var(--t1);}
+.mbtn.set{border-color:var(--green);color:var(--green);background:var(--gbg);}
+
+.clist{display:flex;flex-direction:column;gap:6px;}
+.crow{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--rs);border:1px solid var(--b1);background:var(--s1);cursor:pointer;}
+.crow:hover{border-color:var(--b2);background:var(--s2);}
+.ctime{font-size:12px;color:var(--t2);min-width:96px;flex-shrink:0;font-family:'Menlo',monospace;font-variant-numeric:tabular-nums;}
+.clbl{flex:1;}.clbl input{border:none;background:transparent;font-size:13px;color:var(--t1);width:100%;font-family:inherit;outline:none;cursor:text;}
+.dh{cursor:grab;color:var(--t3);font-size:16px;padding:0 4px;flex-shrink:0;user-select:none;}
+
+/* ── PAGE BOARD ── */
+.bbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem;}
+.fps{display:flex;gap:4px;flex-wrap:wrap;flex:1;}
+.fp{font-size:12px;padding:4px 12px;border-radius:14px;border:1px solid var(--b2);background:var(--s1);color:var(--t2);cursor:pointer;white-space:nowrap;}
+.fp.on{background:#fff;color:#0a0a0a;border-color:#fff;}
+.fp:hover:not(.on){color:var(--t1);}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+.bcol{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:1rem;}
+.bcolhd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.bcoltitle{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);}
+.bcolcount{font-size:10px;color:var(--t3);margin-top:2px;}
+.bclip{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:8px 10px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;cursor:pointer;}
+.bclip:last-child{margin-bottom:0;}
+.bclip:hover{border-color:var(--b2);}
+.bclip.done{border-color:var(--gbd);background:var(--gbg);}
+.btime{color:var(--t3);font-size:11px;min-width:54px;font-family:'Menlo',monospace;flex-shrink:0;line-height:1.6;font-variant-numeric:tabular-nums;}
+.binfo{flex:1;min-width:0;}
+.bname{color:var(--t1);font-weight:500;font-size:12px;margin-bottom:2px;}
+.bsrc{color:var(--t3);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── VIEWER ── */
+.vbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:400;align-items:center;justify-content:center;}
+.vbg.open{display:flex;}
+.vmodal{background:var(--s1);border-radius:14px;width:min(580px,96vw);display:flex;flex-direction:column;overflow:hidden;border:2px solid var(--b2);}
+.vmodal.done{border-color:var(--green);box-shadow:0 0 0 3px var(--gbg);}
+.vhd{padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--b1);gap:10px;}
+.vcat{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);}
+.vn{font-size:14px;font-weight:600;color:var(--t1);}
+.vcnt{font-size:11px;color:var(--t3);margin-top:2px;}
+.vcls{background:none;border:none;color:var(--t2);font-size:24px;cursor:pointer;line-height:1;flex-shrink:0;}
+.vcls:hover{color:var(--t1);}
+.vscreen{background:#000;position:relative;display:flex;align-items:center;justify-content:center;min-height:200px;}
+#cvid{width:100%;max-height:55vh;display:block;}
+#cvmsg{color:var(--t2);font-size:13px;text-align:center;padding:2rem;display:none;}
+.varr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#fff;}
+.varr:hover{background:rgba(255,255,255,.15);}
+.vpl{left:10px;}.vpr{right:10px;}
+.vctrl{padding:10px 14px;border-top:1px solid var(--b1);display:flex;align-items:center;gap:10px;}
+.cpbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--b2);background:var(--s2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;}
+.cpbtn:hover{background:var(--s3);}
+.ctc{font-size:12px;color:var(--t2);min-width:80px;font-variant-numeric:tabular-nums;}
+.cbar{flex:1;position:relative;height:26px;cursor:pointer;}
+.cbarbg{position:absolute;top:11px;left:0;right:0;height:4px;background:var(--s3);border-radius:2px;}
+.cbarfill{position:absolute;top:11px;left:0;height:4px;background:var(--green);border-radius:2px;width:0%;}
+.cbarhead{position:absolute;top:5px;width:12px;height:12px;background:var(--green);border-radius:50%;transform:translateX(-50%);border:2px solid #0a0a0a;pointer-events:none;}
+.vft{padding:10px 16px;border-top:1px solid var(--b1);display:flex;gap:8px;align-items:center;}
+.vdots{display:flex;gap:5px;flex:1;flex-wrap:wrap;align-items:center;}
+.vdot{width:8px;height:8px;border-radius:50%;background:var(--b2);cursor:pointer;}
+.vdot.on{background:#fff;transform:scale(1.2);}
+.vdot.done{background:var(--green);}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="topbar">
+  <span class="logo">Shooting Board</span>
+  <input class="sname" value="Shooting sans titre"/>
+</div>
+
+<div class="nav">
+  <button class="nb on" id="nb-import" onclick="go('import')">1 — Reels</button>
+  <button class="nb" id="nb-cut" onclick="go('cut')">2 — Découpe</button>
+  <button class="nb" id="nb-board" onclick="go('board')">3 — Board</button>
+</div>
+
+<!-- PAGE IMPORT -->
+<div class="page on" id="page-import">
+  <div class="two">
+    <div class="card">
+      <div class="ctitle">Catégories de plans</div>
+      <div class="cats-row" id="cats-row"></div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="cat-inp" placeholder="Nouvelle catégorie…" style="flex:1;"/>
+        <button class="btn btn-sm" onclick="addCat()">+ Ajouter</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Reel Instagram → MP4</div>
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px;">Colle l'URL → SnapInsta te donne le MP4 à télécharger.</p>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="snap-url" placeholder="https://www.instagram.com/reel/…" style="flex:1;"/>
+        <button class="btn btn-sm btn-w" onclick="openSnap()">Ouvrir ↗</button>
+      </div>
+      <div class="hint">snapinsta.app · gratuit · 2 clics</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">Import vidéo locale</div>
+    <label class="upload-label" for="finp">
+      <div style="font-size:28px;margin-bottom:8px;">+</div>
+      <div>Clique ici pour importer une ou plusieurs vidéos</div>
+      <div class="hint">MP4 · MOV · WebM</div>
+    </label>
+    <input type="file" id="finp" accept="video/*" multiple style="position:absolute;left:-9999px;opacity:0;" onchange="addFiles(this)"/>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="ctitle" style="margin:0;">Reels importés (<span id="rcount">0</span>)</div>
+      <button class="btn btn-sm btn-w" onclick="go('cut')">Découper →</button>
+    </div>
+    <div id="rlist"><div class="empty">Aucun reel importé.</div></div>
+  </div>
+</div>
+
+<!-- PAGE CUT -->
+<div class="page" id="page-cut">
+  <div class="tabs" id="reel-tabs"></div>
+  <div class="pwrap">
+    <div class="pscreen">
+      <div id="vmsg"><div style="font-size:32px">▶</div><div>Importe et sélectionne un reel</div></div>
+      <video id="vid" style="display:none;" preload="auto" playsinline></video>
+    </div>
+    <div class="pctrl">
+      <button class="ppbtn" id="pbtn" onclick="togglePlay()">▶</button>
+      <div class="tc" id="tc">0:00 / 0:00</div>
+      <div class="pbar" id="pbar">
+        <div class="pbg"></div>
+        <div class="pfill" id="pfill"></div>
+        <div class="pmarks" id="pmarks"></div>
+        <div class="phead" id="phead"></div>
+      </div>
+      <select style="font-size:12px;padding:4px 6px;width:64px;" onchange="vid.playbackRate=parseFloat(this.value)">
+        <option value="0.25">×0.25</option>
+        <option value="0.5">×0.5</option>
+        <option value="1" selected>×1</option>
+        <option value="1.5">×1.5</option>
+        <option value="2">×2</option>
+      </select>
+    </div>
+  </div>
+  <div class="toolbar">
+    <button class="mbtn" id="in-btn" onclick="markIn()">[ IN&nbsp;<span id="in-v">--</span></button>
+    <button class="mbtn" id="out-btn" onclick="markOut()">OUT ]&nbsp;<span id="out-v">--</span></button>
+    <input type="text" id="cname" placeholder="Nom du plan…" style="flex:1;min-width:130px;"/>
+    <select id="ccat" style="min-width:130px;"><option value="">— catégorie —</option></select>
+    <button class="btn btn-w" onclick="addClip()">+ Ajouter plan</button>
+  </div>
+  <div class="clist" id="clist"></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+    <button class="btn btn-w" onclick="go('board')">Voir le board →</button>
+  </div>
+</div>
+
+<!-- PAGE BOARD -->
+<div class="page" id="page-board">
+  <div class="bbar">
+    <div class="fps" id="fps"></div>
+    <button class="btn btn-sm" onclick="detectSim()">Détecter similaires</button>
+  </div>
+  <div class="bgrid" id="bgrid"></div>
+</div>
+
+</div><!-- /app -->
+
+<!-- VIEWER MODAL -->
+<div class="vbg" id="vbg">
+  <div class="vmodal" id="vmodal">
+    <div class="vhd">
+      <div>
+        <div class="vcat" id="vcat-lbl"></div>
+        <div class="vn" id="vname-lbl"></div>
+        <div class="vcnt" id="vcnt-lbl"></div>
+      </div>
+      <button class="vcls" onclick="closeV()">×</button>
+    </div>
+    <div class="vscreen">
+      <div id="cvmsg"></div>
+      <video id="cvid" preload="auto" playsinline></video>
+      <button class="varr vpl" onclick="vNav(-1)">‹</button>
+      <button class="varr vpr" onclick="vNav(1)">›</button>
+    </div>
+    <div class="vctrl">
+      <button class="cpbtn" id="cpbtn" onclick="toggleCV()">▶</button>
+      <div class="ctc" id="ctc">0.0s / 0.0s</div>
+      <div class="cbar" id="cbar">
+        <div class="cbarbg"></div>
+        <div class="cbarfill" id="cbarfill"></div>
+        <div class="cbarhead" id="cbarhead"></div>
+      </div>
+      <select style="font-size:12px;padding:3px 5px;width:60px;" onchange="cvid.playbackRate=parseFloat(this.value)">
+        <option value="0.25">×0.25</option>
+        <option value="0.5">×0.5</option>
+        <option value="1" selected>×1</option>
+        <option value="1.5">×1.5</option>
+        <option value="2">×2</option>
+      </select>
+    </div>
+    <div class="vft">
+      <div class="vdots" id="vdots"></div>
+      <button class="btn btn-sm" id="vvalbtn" onclick="toggleDone()">✓ Valider</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+var S = {
+  cats: ['Main levée','Trépied','Sol / Canapé'],
+  reels: [],
+  clips: [],
+  activeId: null,
+  inPt: null,
+  outPt: null,
+  filter: 'all',
+  vCat: null,
+  vIdx: 0
+};
+
+var vid = document.getElementById('vid');
+var cvid = document.getElementById('cvid');
+var raf = null;
+var craf = null;
+var cClip = null;
+
+// ── UTILS ──────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function fmt(s) {
+  if (s === null || s === undefined || isNaN(s)) return '--:--';
+  var m = Math.floor(s / 60);
+  var sec = (s % 60).toFixed(1);
+  if (sec.length < 4) sec = '0' + sec;
+  return m + ':' + sec;
+}
+function fmtS(s) {
+  if (!s && s !== 0) return '0:00';
+  return Math.floor(s/60) + ':' + String(Math.round(s%60)).padStart(2,'0');
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function getAR() { return S.reels.find(function(r){ return r.id === S.activeId; }); }
+function catMatch(c, cat) {
+  var cc = c.cat || '';
+  return cat === 'Sans catégorie' ? cc === '' : cc === cat;
+}
+
+// ── NAV ────────────────────────────────────────────────
+function go(pg) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('on'); });
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('page-' + pg).classList.add('on');
+  document.getElementById('nb-' + pg).classList.add('on');
+  if (pg === 'cut') initCut();
+  if (pg === 'board') renderBoard();
+}
+
+// ── SNAPINSTA ──────────────────────────────────────────
+function openSnap() {
+  var u = document.getElementById('snap-url').value.trim();
+  window.open('https://snapinsta.app/' + (u ? '?url=' + encodeURIComponent(u) : ''), '_blank');
+}
+
+// ── CATEGORIES ─────────────────────────────────────────
+function renderCats() {
+  document.getElementById('cats-row').innerHTML = S.cats.map(function(c){
+    return '<div class="cpill">' + esc(c) + '<span class="x" onclick="rmCat(' + JSON.stringify(c) + ')">×</span></div>';
+  }).join('');
+  var sel = document.getElementById('ccat');
+  if (sel) {
+    sel.innerHTML = '<option value="">— catégorie —</option>' + S.cats.map(function(c){
+      return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+    }).join('');
+  }
+}
+function addCat() {
+  var v = document.getElementById('cat-inp').value.trim();
+  if (v && !S.cats.includes(v)) { S.cats.push(v); renderCats(); }
+  document.getElementById('cat-inp').value = '';
+}
+document.getElementById('cat-inp').addEventListener('keydown', function(e){ if(e.key==='Enter') addCat(); });
+function rmCat(c) { S.cats = S.cats.filter(function(x){ return x !== c; }); renderCats(); }
+
+// ── FILE IMPORT ────────────────────────────────────────
+document.getElementById('finp').addEventListener('change', function() {
+  addFiles(this);
+});
+function addFiles(inp) {
+  Array.from(inp.files).forEach(function(f) {
+    var r = { id: uid(), name: f.name.replace(/\.[^.]+$/, ''), src: URL.createObjectURL(f) };
+    S.reels.push(r);
+    if (!S.activeId) S.activeId = r.id;
+  });
+  inp.value = '';
+  renderReels();
+}
+function rmReel(id) {
+  S.reels = S.reels.filter(function(r){ return r.id !== id; });
+  S.clips = S.clips.filter(function(c){ return c.rid !== id; });
+  if (S.activeId === id) S.activeId = S.reels[0] ? S.reels[0].id : null;
+  renderReels();
+}
+function selReel(id) { S.activeId = id; renderReels(); }
+function renderReels() {
+  document.getElementById('rcount').textContent = S.reels.length;
+  var el = document.getElementById('rlist');
+  if (!S.reels.length) { el.innerHTML = '<div class="empty">Aucun reel importé.</div>'; return; }
+  el.innerHTML = S.reels.map(function(r) {
+    var n = S.clips.filter(function(c){ return c.rid === r.id; }).length;
+    return '<div class="ritem' + (S.activeId === r.id ? ' sel' : '') + '" onclick="selReel(\'' + r.id + '\')">'
+      + '<div class="rthumb">🎬</div>'
+      + '<div class="rinfo"><div class="rname">' + esc(r.name) + '</div><div class="rmeta">' + n + ' plan' + (n!==1?'s':'') + '</div></div>'
+      + '<span class="del" onclick="event.stopPropagation();rmReel(\'' + r.id + '\')">×</span>'
+      + '</div>';
+  }).join('');
+}
+
+// ── CUT PAGE ───────────────────────────────────────────
+function initCut() {
+  renderTabs();
+  renderCats();
+  renderCList();
+  loadVid();
+}
+function renderTabs() {
+  var el = document.getElementById('reel-tabs');
+  if (!S.reels.length) { el.innerHTML = '<div style="font-size:12px;color:var(--t3)">Importe des reels d\'abord.</div>'; return; }
+  el.innerHTML = S.reels.map(function(r) {
+    return '<div class="tab' + (S.activeId === r.id ? ' on' : '') + '" onclick="switchTab(\'' + r.id + '\')">' + esc(r.name) + '</div>';
+  }).join('');
+}
+function switchTab(id) {
+  S.activeId = id;
+  S.inPt = null; S.outPt = null;
+  resetMarks();
+  renderTabs();
+  renderCList();
+  loadVid();
+}
+
+// VIDEO
+function loadVid() {
+  var r = getAR();
+  var msg = document.getElementById('vmsg');
+  if (!r) {
+    vid.pause(); vid.removeAttribute('src'); vid.style.display = 'none';
+    msg.style.display = 'flex';
+    msg.innerHTML = '<div style="font-size:32px">▶</div><div>Importe et sélectionne un reel</div>';
+    stopAnim(); return;
+  }
+  msg.style.display = 'none';
+  vid.style.display = 'block';
+  if (vid.dataset.src !== r.src) {
+    vid.dataset.src = r.src;
+    vid.src = r.src;
+    vid.load();
+  }
+  stopAnim(); updateBar();
+}
+vid.addEventListener('play', function(){ document.getElementById('pbtn').textContent='⏸'; startAnim(); });
+vid.addEventListener('pause', function(){ document.getElementById('pbtn').textContent='▶'; stopAnim(); });
+vid.addEventListener('ended', function(){ document.getElementById('pbtn').textContent='▶'; stopAnim(); });
+vid.addEventListener('timeupdate', updateBar);
+vid.addEventListener('loadedmetadata', updateBar);
+vid.addEventListener('click', togglePlay);
+vid.addEventListener('error', function(){
+  var msg = document.getElementById('vmsg');
+  vid.style.display = 'none'; msg.style.display = 'flex';
+  msg.innerHTML = '<div style="color:#f87171;font-size:13px">Format non supporté. Essaie un MP4 H.264.</div>';
+});
+document.getElementById('pbar').addEventListener('click', function(e) {
+  if (!vid.duration) return;
+  var rect = this.getBoundingClientRect();
+  vid.currentTime = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * vid.duration;
+  updateBar();
+});
+function togglePlay() {
+  if (!vid.src || !getAR()) return;
+  if (vid.paused) vid.play().catch(function(){});
+  else vid.pause();
+}
+function startAnim() {
+  stopAnim();
+  function lp() { updateBar(); raf = requestAnimationFrame(lp); }
+  raf = requestAnimationFrame(lp);
+}
+function stopAnim() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+function updateBar() {
+  if (!vid.duration) return;
+  var pct = (vid.currentTime / vid.duration) * 100;
+  document.getElementById('pfill').style.width = pct + '%';
+  document.getElementById('phead').style.left = pct + '%';
+  document.getElementById('tc').textContent = fmtS(vid.currentTime) + ' / ' + fmtS(vid.duration);
+  renderMarks();
+}
+function renderMarks() {
+  if (!vid.duration) return;
+  document.getElementById('pmarks').innerHTML = S.clips.filter(function(c){ return c.rid === S.activeId; }).map(function(c) {
+    var l = (c.in / vid.duration) * 100;
+    var w = Math.max(0.5, ((c.out - c.in) / vid.duration) * 100);
+    return '<div class="mseg" style="left:' + l + '%;width:' + w + '%"></div>';
+  }).join('');
+}
+
+// MARKS
+function resetMarks() {
+  S.inPt = null; S.outPt = null;
+  document.getElementById('in-v').textContent = '--';
+  document.getElementById('out-v').textContent = '--';
+  document.getElementById('in-btn').classList.remove('set');
+  document.getElementById('out-btn').classList.remove('set');
+}
+function markIn() {
+  var t = vid.readyState >= 1 ? vid.currentTime : parseFloat(prompt('IN (secondes) :') || '');
+  if (isNaN(t)) return;
+  S.inPt = t;
+  document.getElementById('in-v').textContent = fmt(t);
+  document.getElementById('in-btn').classList.add('set');
+}
+function markOut() {
+  var t = vid.readyState >= 1 ? vid.currentTime : parseFloat(prompt('OUT (secondes) :') || '');
+  if (isNaN(t)) return;
+  S.outPt = t;
+  document.getElementById('out-v').textContent = fmt(t);
+  document.getElementById('out-btn').classList.add('set');
+}
+
+// CLIPS
+function addClip() {
+  if (!S.activeId) return alert('Sélectionne un reel.');
+  if (S.inPt === null) return alert('Marque un IN.');
+  if (S.outPt === null) return alert('Marque un OUT.');
+  if (S.outPt <= S.inPt) return alert('OUT doit être après IN.');
+  var r = getAR();
+  var name = document.getElementById('cname').value.trim() || 'Plan sans nom';
+  var cat = document.getElementById('ccat').value;
+  S.clips.push({ id: uid(), rid: r.id, rname: r.name, rsrc: r.src, in: S.inPt, out: S.outPt, name: name, cat: cat, sim: false, done: false });
+  document.getElementById('cname').value = '';
+  resetMarks(); renderCList(); updateBar(); renderReels();
+}
+function rmClip(id) {
+  S.clips = S.clips.filter(function(c){ return c.id !== id; });
+  renderCList(); updateBar(); renderReels();
+}
+function setClipName(id, v) { var c = S.clips.find(function(c){ return c.id===id; }); if(c) c.name = v; }
+function setClipCat(id, v) { var c = S.clips.find(function(c){ return c.id===id; }); if(c) c.cat = v; }
+
+var dragSrc = null;
+function dStart(e, id) { dragSrc = id; e.dataTransfer.effectAllowed = 'move'; }
+function dOver(e, id) {
+  e.preventDefault();
+  if (!dragSrc || dragSrc === id) return;
+  var arr = S.clips.filter(function(c){ return c.rid === S.activeId; });
+  var oth = S.clips.filter(function(c){ return c.rid !== S.activeId; });
+  var si = arr.findIndex(function(c){ return c.id === dragSrc; });
+  var ti = arr.findIndex(function(c){ return c.id === id; });
+  if (si < 0 || ti < 0) return;
+  arr.splice(ti, 0, arr.splice(si, 1)[0]);
+  S.clips = oth.concat(arr);
+  dragSrc = id; renderCList();
+}
+function renderCList() {
+  var el = document.getElementById('clist');
+  var arr = S.clips.filter(function(c){ return c.rid === S.activeId; });
+  if (!arr.length) { el.innerHTML = '<div class="empty">Marque IN → OUT puis ajoute un plan.</div>'; return; }
+  el.innerHTML = arr.map(function(c) {
+    var opts = S.cats.map(function(cat){
+      return '<option value="' + esc(cat) + '"' + (c.cat===cat?' selected':'') + '>' + esc(cat) + '</option>';
+    }).join('');
+    return '<div class="crow" draggable="true" ondragstart="dStart(event,\'' + c.id + '\')" ondragover="dOver(event,\'' + c.id + '\')" ondrop="event.preventDefault()" onclick="openViewer(\'' + c.cat + '\',\'' + c.id + '\')">'
+      + '<span class="dh" onclick="event.stopPropagation()">⠿</span>'
+      + '<div class="ctime">' + fmt(c.in) + ' → ' + fmt(c.out) + '</div>'
+      + '<div class="clbl"><input value="' + esc(c.name) + '" onclick="event.stopPropagation()" onchange="setClipName(\'' + c.id + '\',this.value)"/></div>'
+      + '<div onclick="event.stopPropagation()"><select onchange="setClipCat(\'' + c.id + '\',this.value)"><option value="">—</option>' + opts + '</select></div>'
+      + '<span class="del" onclick="event.stopPropagation();rmClip(\'' + c.id + '\')">×</span>'
+      + '</div>';
+  }).join('');
+}
+
+// ── BOARD ───────────────────────────────────────────────
+function detectSim() {
+  S.clips.forEach(function(c){ c.sim = false; });
+  var map = {};
+  S.clips.forEach(function(c){ var k = c.name.toLowerCase().trim(); if(!map[k]) map[k]=[]; map[k].push(c); });
+  Object.values(map).forEach(function(g){ if(g.length>1) g.forEach(function(c){ c.sim=true; }); });
+  renderBoard();
+}
+function renderBoard() {
+  renderFps();
+  var el = document.getElementById('bgrid');
+  var allCats = S.cats.concat(['Sans catégorie']);
+  var vis = S.filter === 'all' ? allCats : [S.filter];
+  el.innerHTML = vis.map(function(cat) {
+    var arr = S.clips.filter(function(c){ return catMatch(c, cat); });
+    if (S.filter !== 'all') arr = arr; // already filtered by catMatch
+    var dn = arr.filter(function(c){ return c.done; }).length;
+    var html = '<div class="bcol">'
+      + '<div class="bcolhd"><div><div class="bcoltitle">' + esc(cat) + '</div>'
+      + '<div class="bcolcount">' + arr.length + ' plan' + (arr.length!==1?'s':'') + (dn?' · '+dn+' validé'+(dn>1?'s':''):'') + '</div></div>'
+      + '<button class="btn btn-sm" onclick="openViewer(\'' + esc(cat) + '\',null)"' + (arr.length?'':' disabled style="opacity:.4"') + '>▶ Voir tout</button>'
+      + '</div>';
+    if (arr.length) {
+      html += arr.map(function(c) {
+        return '<div class="bclip' + (c.done?' done':'') + '" onclick="openViewer(\'' + esc(c.cat||'Sans catégorie') + '\',\'' + c.id + '\')">'
+          + '<div class="btime">' + fmt(c.in) + '<br/>' + fmt(c.out) + '</div>'
+          + '<div class="binfo"><div class="bname">' + (c.done?'<span style="color:var(--green)">✓ </span>':'') + esc(c.name) + (c.sim?' <span class="badge b-warn">similaire</span>':'') + '</div>'
+          + '<div class="bsrc">' + esc(c.rname) + '</div></div>'
+          + '<span class="del" onclick="event.stopPropagation();rmClip(\'' + c.id + '\');renderBoard()">×</span>'
+          + '</div>';
+      }).join('');
+    } else {
+      html += '<div class="empty">Aucun plan</div>';
+    }
+    html += '</div>';
+    return html;
+  }).join('');
+}
+function renderFps() {
+  var el = document.getElementById('fps');
+  var all = ['all'].concat(S.cats).concat(['Sans catégorie']);
+  el.innerHTML = all.map(function(f) {
+    return '<div class="fp' + (S.filter===f?' on':'') + '" onclick="S.filter=' + JSON.stringify(f) + ';renderBoard()">' + (f==='all'?'Tout':esc(f)) + '</div>';
+  }).join('');
+}
+
+// ── VIEWER ─────────────────────────────────────────────
+function getCatClips(cat) {
+  return S.clips.filter(function(c){ return catMatch(c, cat); });
+}
+function openViewer(cat, clipId) {
+  var realCat = cat || 'Sans catégorie';
+  var arr = getCatClips(realCat);
+  if (!arr.length) return;
+  S.vCat = realCat;
+  if (clipId) {
+    var idx = arr.findIndex(function(c){ return c.id === clipId; });
+    S.vIdx = idx >= 0 ? idx : 0;
+  } else {
+    S.vIdx = 0;
+  }
+  document.getElementById('vbg').classList.add('open');
+  loadCV();
+}
+function closeV() {
+  document.getElementById('vbg').classList.remove('open');
+  stopCV();
+  cvid.pause();
+  cvid.removeAttribute('src');
+  cvid.dataset.src = '';
+  cClip = null;
+}
+document.getElementById('vbg').addEventListener('click', function(e){ if(e.target===this) closeV(); });
+function vNav(dir) {
+  var arr = getCatClips(S.vCat);
+  S.vIdx = (S.vIdx + dir + arr.length) % arr.length;
+  loadCV();
+}
+function loadCV() {
+  var arr = getCatClips(S.vCat);
+  var c = arr[S.vIdx];
+  if (!c) return;
+  cClip = c;
+  document.getElementById('vcat-lbl').textContent = S.vCat;
+  document.getElementById('vname-lbl').textContent = c.name;
+  document.getElementById('vcnt-lbl').textContent = (S.vIdx+1) + ' / ' + arr.length;
+  // validate btn + border
+  var vbtn = document.getElementById('vvalbtn');
+  if (c.done) { vbtn.textContent = '✓ Validé'; vbtn.className = 'btn btn-sm btn-g'; }
+  else { vbtn.textContent = '✓ Valider'; vbtn.className = 'btn btn-sm btn-w'; }
+  document.getElementById('vmodal').classList.toggle('done', c.done);
+  // dots
+  document.getElementById('vdots').innerHTML = arr.map(function(x,i){
+    return '<div class="vdot' + (i===S.vIdx?' on':'') + (x.done?' done':'') + '" onclick="S.vIdx='+i+';loadCV()" title="' + esc(x.name) + '"></div>';
+  }).join('');
+  // load video
+  var msg = document.getElementById('cvmsg');
+  stopCV();
+  if (c.rsrc) {
+    msg.style.display = 'none';
+    cvid.style.display = 'block';
+    if (cvid.dataset.src !== c.rsrc) {
+      cvid.dataset.src = c.rsrc;
+      cvid.src = c.rsrc;
+      cvid.load();
+      cvid.oncanplay = function() {
+        cvid.oncanplay = null;
+        cvid.currentTime = c.in;
+        cvid.play().catch(function(){});
+        startCV();
+      };
+    } else {
+      cvid.currentTime = c.in;
+      cvid.play().catch(function(){});
+      startCV();
+    }
+  } else {
+    cvid.style.display = 'none';
+    msg.style.display = 'flex';
+    msg.textContent = 'Vidéo non disponible';
+  }
+  updateCBar();
+}
+
+cvid.addEventListener('play', function(){ document.getElementById('cpbtn').textContent='⏸'; });
+cvid.addEventListener('pause', function(){ document.getElementById('cpbtn').textContent='▶'; stopCV(); });
+
+function startCV() {
+  stopCV();
+  function lp() {
+    if (!cClip) return;
+    if (cvid.currentTime >= cClip.out) {
+      cvid.pause();
+      cvid.currentTime = cClip.out;
+      updateCBar();
+      return;
+    }
+    updateCBar();
+    craf = requestAnimationFrame(lp);
+  }
+  craf = requestAnimationFrame(lp);
+}
+function stopCV() { if (craf) { cancelAnimationFrame(craf); craf = null; } }
+function updateCBar() {
+  if (!cClip) return;
+  var dur = cClip.out - cClip.in;
+  var pos = Math.max(0, Math.min(cvid.currentTime, cClip.out) - cClip.in);
+  var pct = dur > 0 ? (pos / dur) * 100 : 0;
+  document.getElementById('cbarfill').style.width = pct + '%';
+  document.getElementById('cbarhead').style.left = pct + '%';
+  document.getElementById('ctc').textContent = pos.toFixed(1) + 's / ' + dur.toFixed(1) + 's';
+}
+document.getElementById('cbar').addEventListener('click', function(e) {
+  if (!cClip || !cvid.duration) return;
+  var rect = this.getBoundingClientRect();
+  var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  cvid.currentTime = cClip.in + pct * (cClip.out - cClip.in);
+  updateCBar();
+});
+function toggleCV() {
+  if (!cvid.src) return;
+  if (cvid.paused) {
+    if (cClip && cvid.currentTime >= cClip.out) cvid.currentTime = cClip.in;
+    cvid.play().catch(function(){});
+    startCV();
+  } else {
+    cvid.pause();
+  }
+}
+function toggleDone() {
+  var arr = getCatClips(S.vCat);
+  var c = arr[S.vIdx];
+  if (!c) return;
+  c.done = !c.done;
+  loadCV();
+  renderBoard();
+}
+
+// ── INIT ───────────────────────────────────────────────
+renderCats();
+renderReels();
+</script>
+</body>
+</html>

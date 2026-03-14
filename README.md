@@ -14,6 +14,7 @@ antoreli/
 │   ├── model.js        # État et opérations sur les données (MVC - Model)
 │   ├── view.js         # Rendu DOM (MVC - View)
 │   ├── controller.js   # Logique et événements (MVC - Controller)
+│   ├── storage.js      # Persistance localStorage
 │   └── utils.js        # Utilitaires (uid, fmt, esc)
 ├── .gitignore
 └── README.md
@@ -58,4 +59,3 @@ Les **catégories** et **clips** (noms, IN/OUT, catégories, validations) sont s
 - CSS variables
 - localStorage (persistance)
 - Pas de dépendances externes
-# antoreli.board
