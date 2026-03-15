@@ -139,7 +139,10 @@ export async function addFiles(inp) {
           alert(msg);
         }
       }
-      if (okCount > 0) setUploadMsg(okCount === 1 ? '1 vidéo enregistrée.' : okCount + ' vidéos enregistrées.');
+      if (okCount > 0) {
+        setUploadDebugDetail(null);
+        setUploadMsg(okCount === 1 ? '1 vidéo enregistrée.' : okCount + ' vidéos enregistrées.');
+      }
     } else {
       files.forEach((f) => addReel(f));
       setUploadMsg(files.length === 1 ? '1 vidéo ajoutée (mode local).' : files.length + ' vidéos ajoutées (mode local).');
@@ -554,4 +557,8 @@ export function bindEvents() {
           alert(data.error || 'Erreur lors de la sauvegarde.');
         }
       } catch (err) {
-        alert('Erreur lors de la sau
+        alert('Erreur lors de la sauvegarde.');
+      }
+    });
+  }
+}
