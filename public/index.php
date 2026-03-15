@@ -34,7 +34,18 @@ spl_autoload_register(function (string $class): void {
 use App\Core\Router;
 use App\Core\Session;
 
-Session::start();
-
-$router = new Router();
-$router->dispatch();
+try {
+    Session::start();
+    $router = new Router();
+    $router->dispatch();
+} catch (Throwable $e) {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/html; charset=utf-8');
+    }
+    $showDetails = ($_ENV['APP_DEBUG'] ?? '') === '1' || ($_ENV['APP_DEBUG'] ?? '') === 'true';
+    $message = $showDetails
+        ? '<p><strong>Erreur :</strong> ' . htmlspecialchars($e->getMessage()) . '</p><p><small>' . htmlspecialchars($e->getFile() . ':' . $e->getLine()) . '</small></p>'
+        : 'Erreur serveur. Vérifiez le fichier .env (DB_*, ADMIN_*) et les logs PHP.';
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Erreur</title></head><body><h1>Erreur 500</h1>' . $message . '</body></html>';
+}
