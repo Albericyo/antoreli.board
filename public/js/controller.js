@@ -93,6 +93,18 @@ function setUploadMsg(text, isError = false) {
   if (text && !isError) setTimeout(() => { el.textContent = ''; el.className = 'upload-msg'; }, 3000);
 }
 
+function setUploadDebugDetail(debug) {
+  const el = document.getElementById('upload-debug-detail');
+  if (!el) return;
+  if (debug == null) {
+    el.textContent = '';
+    el.setAttribute('aria-hidden', 'true');
+  } else {
+    el.textContent = typeof debug === 'object' ? JSON.stringify(debug, null, 2) : String(debug);
+    el.setAttribute('aria-hidden', 'false');
+  }
+}
+
 export async function addFiles(inp) {
   if (!inp?.files || !inp.files.length) return;
   const files = Array.from(inp.files);
@@ -104,6 +116,7 @@ export async function addFiles(inp) {
   try {
     if (boardId !== null) {
       if (finp) finp.disabled = true;
+      setUploadDebugDetail(null);
       setUploadMsg('Import en cours…');
       let okCount = 0;
       for (const file of files) {
@@ -115,7 +128,14 @@ export async function addFiles(inp) {
           const msg = (err.message === 'Failed to fetch' || err.message === 'Load failed')
             ? 'Connexion impossible. Vérifiez le réseau et que l\'application est bien déployée.'
             : (err.message || 'Erreur lors de l\'upload.');
-          setUploadMsg(msg, true);
+          if (err.debug) {
+            setUploadMsg(msg + ' — Voir détail ci‑dessous.', true);
+            setUploadDebugDetail(err.debug);
+            console.error('Upload debug:', err.debug);
+          } else {
+            setUploadMsg(msg, true);
+            setUploadDebugDetail(null);
+          }
           alert(msg);
         }
       }
@@ -534,8 +554,4 @@ export function bindEvents() {
           alert(data.error || 'Erreur lors de la sauvegarde.');
         }
       } catch (err) {
-        alert('Erreur lors de la sauvegarde.');
-      }
-    });
-  }
-}
+        alert('Erreur lors de la sau

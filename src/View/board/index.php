@@ -59,6 +59,7 @@ $reels = isset($reels) ? $reels : [];
       <div class="card">
         <div class="ctitle">Import vidéo locale</div>
         <div id="upload-msg" class="upload-msg" role="status" aria-live="polite"></div>
+        <pre id="upload-debug-detail" class="upload-debug-detail" aria-hidden="true"></pre>
         <label class="upload-label" for="finp">
           <div class="vmsg-icon" style="margin-bottom:8px">+</div>
           <div>Clique ici pour importer une ou plusieurs vidéos</div>

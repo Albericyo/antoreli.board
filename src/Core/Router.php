@@ -65,6 +65,10 @@ class Router
             $this->dispatchBoard('deleteReel');
             return;
         }
+        if ($this->action === 'upload-debug') {
+            $this->dispatchBoard('uploadDebug');
+            return;
+        }
         header('Location: index.php?action=dashboard');
         exit;
     }

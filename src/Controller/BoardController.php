@@ -32,7 +32,12 @@ class BoardController
                 return;
             }
             if (empty($_FILES['file']) || !isset($_FILES['file']['error'])) {
-                $this->sendUploadError('Aucun fichier reçu (vérifiez post_max_size et upload_max_filesize en PHP)', 400);
+                $this->sendUploadError('Aucun fichier reçu (vérifiez post_max_size et upload_max_filesize en PHP)', 400, [
+                    'received_board_id' => $boardId,
+                    'post_keys' => array_keys($_POST),
+                    'files_keys' => isset($_FILES['file']) ? array_keys($_FILES['file']) : [],
+                    'upload_error' => $_FILES['file']['error'] ?? null,
+                ]);
                 return;
             }
             $err = (int) $_FILES['file']['error'];
@@ -40,11 +45,14 @@ class BoardController
                 $msg = $err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE
                     ? 'Fichier trop volumineux (PHP: upload_max_filesize / post_max_size)'
                     : ($err === UPLOAD_ERR_NO_FILE ? 'Aucun fichier envoyé' : 'Erreur upload PHP (code ' . $err . ')');
-                $this->sendUploadError($msg, 400);
+                $this->sendUploadError($msg, 400, ['upload_error_code' => $err, 'board_id' => $boardId]);
                 return;
             }
             if (empty($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
-                $this->sendUploadError('Fichier temporaire invalide', 400);
+                $this->sendUploadError('Fichier temporaire invalide', 400, [
+                    'tmp_name' => $_FILES['file']['tmp_name'] ?? null,
+                    'board_id' => $boardId,
+                ]);
                 return;
             }
             $file = $_FILES['file'];
@@ -68,7 +76,10 @@ class BoardController
             $storageDir = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . '/storage/reels/' . $boardId;
             if (!is_dir($storageDir)) {
                 if (!@mkdir($storageDir, 0755, true)) {
-                    $this->sendUploadError('Impossible de créer le dossier de stockage (droits écriture)', 500);
+                    $this->sendUploadError('Impossible de créer le dossier de stockage (droits écriture)', 500, [
+                        'storage_dir' => $storageDir,
+                        'board_id' => $boardId,
+                    ]);
                     return;
                 }
             }
@@ -76,7 +87,11 @@ class BoardController
             $filePath = 'reels/' . $boardId . '/' . $fileName;
             $absPath = $storageDir . '/' . $fileName;
             if (!move_uploaded_file($file['tmp_name'], $absPath)) {
-                $this->sendUploadError('Erreur lors de l\'enregistrement du fichier (droits écriture?)', 500);
+                $this->sendUploadError('Erreur lors de l\'enregistrement du fichier (droits écriture?)', 500, [
+                    'target_path' => $absPath,
+                    'tmp_name' => $file['tmp_name'],
+                    'board_id' => $boardId,
+                ]);
                 return;
             }
             $id = Reel::create($boardId, $baseName, $filePath, $mime);
@@ -88,19 +103,80 @@ class BoardController
             http_response_code(200);
             echo json_encode(['id' => $id, 'name' => $baseName, 'url' => $url]);
         } catch (\Throwable $e) {
-            $this->sendUploadError('Erreur serveur: ' . $e->getMessage(), 500);
+            $this->sendUploadError('Erreur serveur: ' . $e->getMessage(), 500, [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
         }
     }
 
     /** Envoie une erreur JSON pour l’upload et arrête tout autre envoi. */
-    private function sendUploadError(string $message, int $httpCode = 400): void
+    private function sendUploadError(string $message, int $httpCode = 400, array $extra = []): void
     {
         if (ob_get_level()) {
             ob_end_clean();
         }
         header('Content-Type: application/json; charset=utf-8');
         http_response_code($httpCode);
-        echo json_encode(['error' => $message]);
+        $payload = ['error' => $message];
+        if ($this->isDebug()) {
+            $payload['debug'] = array_merge($this->getUploadDebugInfo(), $extra);
+        }
+        echo json_encode($payload);
+    }
+
+    private function isDebug(): bool
+    {
+        $v = $_ENV['APP_DEBUG'] ?? '';
+        return $v === '1' || $v === 'true' || $v === 'on';
+    }
+
+    /** Infos de debug pour l'upload (limites PHP, stockage, open_basedir). */
+    private function getUploadDebugInfo(?int $boardId = null): array
+    {
+        $projectRoot = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
+        $storageBase = $projectRoot . '/storage';
+        $reelsDir = $storageBase . '/reels';
+        $testDir = $boardId ? $reelsDir . '/' . $boardId : $reelsDir;
+        $storageExists = is_dir($storageBase);
+        $storageWritable = $storageExists && is_writable($storageBase);
+        $reelsExists = is_dir($reelsDir);
+        $reelsWritable = $reelsExists && is_writable($reelsDir);
+        $testDirExists = is_dir($testDir);
+        $testDirWritable = $testDirExists && is_writable($testDir);
+        if (!$testDirExists && $storageWritable) {
+            $testDirWritable = @mkdir($testDir, 0755, true) && is_writable($testDir);
+        }
+        return [
+            'php_version' => PHP_VERSION,
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size' => ini_get('post_max_size'),
+            'file_uploads' => ini_get('file_uploads'),
+            'project_root' => $projectRoot,
+            'storage_path' => $storageBase,
+            'storage_exists' => $storageExists,
+            'storage_writable' => $storageWritable,
+            'reels_dir_writable' => $reelsWritable,
+            'test_dir' => $testDir,
+            'test_dir_writable' => $testDirWritable,
+            'open_basedir' => ini_get('open_basedir') ?: '(vide)',
+        ];
+    }
+
+    /** GET ?action=upload-debug — retourne la config upload et l'état du stockage (pour debug). */
+    public function uploadDebug(): void
+    {
+        if (!Session::isLoggedIn()) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(403);
+            echo json_encode(['error' => 'Non authentifié', 'debug' => $this->getUploadDebugInfo()]);
+            return;
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(200);
+        $info = $this->getUploadDebugInfo(1);
+        echo json_encode(['ok' => true, 'upload_config' => $info], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     public function streamReel(): void

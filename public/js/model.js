@@ -153,9 +153,21 @@ export function uploadReel(file) {
         if (!res.ok) throw new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : (res.status + ' — ' + errMsg));
         throw new Error(errMsg);
       }
-      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'upload.');
-      if (data.error) throw new Error(data.error);
-      if (data.id == null || !data.name || !data.url) throw new Error('Réponse serveur incomplète (id/name/url manquants).');
+      if (!res.ok) {
+        const e = new Error(data.error || 'Erreur lors de l\'upload.');
+        if (data.debug) e.debug = data.debug;
+        throw e;
+      }
+      if (data.error) {
+        const e = new Error(data.error);
+        if (data.debug) e.debug = data.debug;
+        throw e;
+      }
+      if (data.id == null || !data.name || !data.url) {
+        const e = new Error('Réponse serveur incomplète (id/name/url manquants).');
+        if (data.debug) e.debug = data.debug;
+        throw e;
+      }
       return { id: Number(data.id), name: data.name, url: data.url };
     })
     .catch((err) => {

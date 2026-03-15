@@ -62,6 +62,8 @@ input::placeholder{color:var(--t3);}
 .upload-msg{min-height:1.5em;font-size:12px;color:var(--t2);margin-bottom:8px;}
 .upload-msg.err{color:#f87171;}
 .upload-msg.ok{color:var(--green);}
+.upload-debug-detail{display:none;margin-top:8px;padding:10px;font-size:11px;background:var(--s2);border:1px solid var(--t2);border-radius:4px;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;}
+.upload-debug-detail[aria-hidden="false"]{display:block;}
 .cats-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .cpill{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 10px;border-radius:14px;background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
 .cpill .x{cursor:pointer;color:var(--t3);font-size:15px;}
