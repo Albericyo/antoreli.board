@@ -305,6 +305,19 @@ export function bindEvents() {
     });
   }
 
+  const muteBtn = document.getElementById('mute-btn');
+  if (muteBtn && vid) {
+    function updateMuteBtnLabel() {
+      muteBtn.textContent = vid.muted ? '🔇' : '🔊';
+      muteBtn.title = vid.muted ? 'Son coupé (cliquer pour activer)' : 'Son activé (cliquer pour couper)';
+    }
+    updateMuteBtnLabel();
+    muteBtn.addEventListener('click', () => {
+      vid.muted = !vid.muted;
+      updateMuteBtnLabel();
+    });
+  }
+
   if (pbar) {
     pbar.addEventListener('click', (e) => {
       if (!vid?.duration) return;
@@ -386,6 +399,13 @@ export function bindEvents() {
   });
 
   document.addEventListener('dragstart', (e) => {
+    const bclip = e.target.closest('.bclip');
+    if (bclip && bclip.dataset.clipId) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/x-board-clip', bclip.dataset.clipId);
+      e.stopPropagation();
+      return;
+    }
     const el = e.target.closest('[data-drag-id]');
     if (!el) return;
     e.stopPropagation();
@@ -393,13 +413,46 @@ export function bindEvents() {
   });
 
   document.addEventListener('dragover', (e) => {
+    if (e.dataTransfer.types.includes('application/x-board-clip')) {
+      const col = e.target.closest('.bcol');
+      if (col) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        document.querySelectorAll('.bcol').forEach((c) => c.classList.remove('bcol--drag-over'));
+        col.classList.add('bcol--drag-over');
+        return;
+      }
+    }
     const el = e.target.closest('[data-drag-id]');
     if (!el) return;
     const id = el.dataset.dragId;
     if (id) dOver(e, id);
   });
 
-  document.addEventListener('drop', (e) => e.preventDefault());
+  document.addEventListener('dragleave', (e) => {
+    if (!e.target.closest('.bcol') || e.relatedTarget?.closest('.bcol')) return;
+    document.querySelectorAll('.bcol').forEach((c) => c.classList.remove('bcol--drag-over'));
+  });
+
+  document.addEventListener('drop', (e) => {
+    const col = e.target.closest('.bcol');
+    if (col && e.dataTransfer.types.includes('application/x-board-clip')) {
+      e.preventDefault();
+      const clipId = e.dataTransfer.getData('application/x-board-clip');
+      const cat = col.dataset.cat;
+      if (clipId && cat !== undefined) {
+        setClipCat(clipId, cat);
+        renderBoard();
+      }
+      document.querySelectorAll('.bcol').forEach((c) => c.classList.remove('bcol--drag-over'));
+      return;
+    }
+    e.preventDefault();
+  });
+
+  document.addEventListener('dragend', () => {
+    document.querySelectorAll('.bcol').forEach((c) => c.classList.remove('bcol--drag-over'));
+  });
 
   document.getElementById('nb-import')?.addEventListener('click', () => go('import'));
   document.getElementById('nb-cut')?.addEventListener('click', () => go('cut'));
@@ -418,6 +471,15 @@ export function bindEvents() {
   document.querySelector('.vpl')?.addEventListener('click', () => vNav(-1));
   document.querySelector('.vpr')?.addEventListener('click', () => vNav(1));
   document.getElementById('cpbtn')?.addEventListener('click', toggleCV);
+
+  const cvMuteBtn = document.getElementById('cv-mute-btn');
+  if (cvMuteBtn && cvid) {
+    cvMuteBtn.addEventListener('click', () => {
+      cvid.muted = !cvid.muted;
+      cvMuteBtn.textContent = cvid.muted ? '🔇' : '🔊';
+      cvMuteBtn.title = cvid.muted ? 'Son coupé (cliquer pour activer)' : 'Son activé (cliquer pour couper)';
+    });
+  }
 
   const saveBoardBtn = document.getElementById('save-board-btn');
   if (saveBoardBtn && typeof window.__BOARD_ID__ === 'number') {

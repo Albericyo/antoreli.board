@@ -84,10 +84,11 @@ $reels = isset($reels) ? $reels : [];
             <div class="vmsg-icon">▶</div>
             <div>Importe et sélectionne un reel</div>
           </div>
-          <video id="vid" style="display:none" preload="auto" playsinline></video>
+          <video id="vid" style="display:none" preload="auto" playsinline muted></video>
         </div>
         <div class="pctrl">
           <button class="ppbtn" id="pbtn" type="button">▶</button>
+          <button class="ppbtn" id="mute-btn" type="button" title="Son coupé (cliquer pour activer)" aria-label="Basculer le son">🔇</button>
           <div class="tc" id="tc">0:00 / 0:00</div>
           <div class="pbar" id="pbar">
             <div class="pbg"></div>
@@ -140,12 +141,13 @@ $reels = isset($reels) ? $reels : [];
       </div>
       <div class="vscreen">
         <div id="cvmsg"></div>
-        <video id="cvid" preload="auto" playsinline></video>
+        <video id="cvid" preload="auto" playsinline muted></video>
         <button class="varr vpl" type="button" aria-label="Précédent">‹</button>
         <button class="varr vpr" type="button" aria-label="Suivant">›</button>
       </div>
       <div class="vctrl">
         <button class="cpbtn" id="cpbtn" type="button">▶</button>
+        <button class="cpbtn" id="cv-mute-btn" type="button" title="Son coupé (cliquer pour activer)" aria-label="Basculer le son">🔇</button>
         <div class="ctc" id="ctc">0.0s / 0.0s</div>
         <div class="cbar" id="cbar">
           <div class="cbarbg"></div>

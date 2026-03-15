@@ -139,7 +139,13 @@ export function loadVid() {
   if (vid.dataset.src !== r.src) {
     vid.dataset.src = r.src;
     vid.src = r.src;
+    vid.muted = true;
     vid.load();
+    const muteBtn = document.getElementById('mute-btn');
+    if (muteBtn) {
+      muteBtn.textContent = '🔇';
+      muteBtn.title = 'Son coupé (cliquer pour activer)';
+    }
   }
   stopAnim();
   updateBar();
@@ -186,14 +192,14 @@ export function renderBoard() {
       const dn = arr.filter((c) => c.done).length;
       const catEsc = esc(cat);
       let html =
-        `<div class="bcol"><div class="bcolhd"><div><div class="bcoltitle">${catEsc}</div>` +
+        `<div class="bcol" data-cat="${catEsc}"><div class="bcolhd"><div><div class="bcoltitle">${catEsc}</div>` +
         `<div class="bcolcount">${arr.length} plan${arr.length !== 1 ? 's' : ''}${dn ? ' · ' + dn + ' validé' + (dn > 1 ? 's' : '') : ''}</div></div>` +
         `<button class="btn btn-sm" data-action="openViewer" data-cat="${catEsc}" data-clip-id="" ${arr.length ? '' : 'disabled style="opacity:.4"'}>▶ Voir tout</button></div>`;
       if (arr.length) {
         html += arr
           .map(
             (c) =>
-              `<div class="bclip ${c.done ? 'done' : ''}" data-action="openViewer" data-cat="${esc(c.cat || 'Sans catégorie')}" data-clip-id="${c.id}">
+              `<div class="bclip ${c.done ? 'done' : ''}" draggable="true" data-action="openViewer" data-cat="${esc(c.cat || 'Sans catégorie')}" data-clip-id="${c.id}">
                 <div class="btime">${fmt(c.in)}<br/>${fmt(c.out)}</div>
                 <div class="binfo"><div class="bname">${c.done ? '<span style="color:var(--green)">✓ </span>' : ''}${esc(c.name)}${c.sim ? ' <span class="badge b-warn">similaire</span>' : ''}</div>
                 <div class="bsrc">${esc(c.rname)}</div></div>
@@ -282,6 +288,12 @@ export function loadCV() {
   if (c.rsrc) {
     cvmsg.style.display = 'none';
     cvid.style.display = 'block';
+    cvid.muted = true;
+    const cvMuteBtn = document.getElementById('cv-mute-btn');
+    if (cvMuteBtn) {
+      cvMuteBtn.textContent = '🔇';
+      cvMuteBtn.title = 'Son coupé (cliquer pour activer)';
+    }
     if (cvid.dataset.src !== c.rsrc) {
       cvid.dataset.src = c.rsrc;
       cvid.src = c.rsrc;
@@ -326,10 +338,8 @@ export function startCV() {
     const cvid = document.getElementById('cvid');
     if (!cClip || !cvid) return;
     if (cvid.currentTime >= cClip.out) {
-      cvid.pause();
-      cvid.currentTime = cClip.out;
-      updateCBar();
-      return;
+      cvid.currentTime = cClip.in;
+      cvid.play().catch(() => {});
     }
     updateCBar();
     craf = requestAnimationFrame(lp);
