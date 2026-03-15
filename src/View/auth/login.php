@@ -7,7 +7,7 @@ $pageTitle = 'Connexion';
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title><?= htmlspecialchars($pageTitle) ?> — Shooting Board</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
   <style>
     .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
     .login-card { width: 100%; max-width: 360px; }

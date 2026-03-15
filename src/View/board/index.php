@@ -10,7 +10,7 @@ $reels = isset($reels) ? $reels : [];
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title><?= htmlspecialchars($boardName) ?> — Shooting Board</title>
-  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="stylesheet" href="css/styles.css"/>
   <script>
     window.__BOARD_ID__ = <?= $boardId ? (int) $boardId : 'null' ?>;
     window.__BOARD_NAME__ = <?= json_encode($boardName) ?>;
@@ -173,6 +173,6 @@ $reels = isset($reels) ? $reels : [];
     </div>
   </div>
 
-  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

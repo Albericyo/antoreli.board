@@ -95,33 +95,40 @@ function setUploadMsg(text, isError = false) {
 
 export async function addFiles(inp) {
   if (!inp?.files || !inp.files.length) return;
+  const files = Array.from(inp.files);
+  setUploadMsg(files.length === 1 ? '1 fichier sélectionné…' : files.length + ' fichiers sélectionnés…');
+  inp.value = '';
   const rawId = typeof window !== 'undefined' ? window.__BOARD_ID__ : null;
   const boardId = rawId != null && Number(rawId) >= 1 ? Number(rawId) : null;
-  const files = Array.from(inp.files);
-  inp.value = '';
-  if (boardId !== null) {
-    const finp = document.getElementById('finp');
-    if (finp) finp.disabled = true;
-    setUploadMsg('Import en cours…');
-    let okCount = 0;
-    for (const file of files) {
-      try {
-        const result = await uploadReel(file);
-        addReel(result);
-        okCount += 1;
-      } catch (err) {
-        const msg = (err.message === 'Failed to fetch' || err.message === 'Load failed')
-          ? 'Connexion impossible. Vérifiez le réseau et que l\'application est bien déployée.'
-          : (err.message || 'Erreur lors de l\'upload.');
-        setUploadMsg(msg, true);
-        alert(msg);
+  const finp = document.getElementById('finp');
+  try {
+    if (boardId !== null) {
+      if (finp) finp.disabled = true;
+      setUploadMsg('Import en cours…');
+      let okCount = 0;
+      for (const file of files) {
+        try {
+          const result = await uploadReel(file);
+          addReel(result);
+          okCount += 1;
+        } catch (err) {
+          const msg = (err.message === 'Failed to fetch' || err.message === 'Load failed')
+            ? 'Connexion impossible. Vérifiez le réseau et que l\'application est bien déployée.'
+            : (err.message || 'Erreur lors de l\'upload.');
+          setUploadMsg(msg, true);
+          alert(msg);
+        }
       }
+      if (okCount > 0) setUploadMsg(okCount === 1 ? '1 vidéo enregistrée.' : okCount + ' vidéos enregistrées.');
+    } else {
+      files.forEach((f) => addReel(f));
+      setUploadMsg(files.length === 1 ? '1 vidéo ajoutée (mode local).' : files.length + ' vidéos ajoutées (mode local).');
     }
+  } catch (err) {
+    setUploadMsg(err.message || 'Erreur inattendue.', true);
+    alert(err.message || 'Erreur inattendue.');
+  } finally {
     if (finp) finp.disabled = false;
-    if (okCount > 0) setUploadMsg(okCount === 1 ? '1 vidéo enregistrée.' : okCount + ' vidéos enregistrées.');
-  } else {
-    files.forEach((f) => addReel(f));
-    setUploadMsg('');
   }
   renderReels();
 }
