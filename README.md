@@ -76,7 +76,7 @@ L’application (PHP MVC + login) doit être servie depuis le dossier **`public/
 
 ### Démarrage (PHP + MySQL)
 
-1. **Créer la base** : importer `database/schema.sql` dans MySQL (tables `boards` et `reels`). Si la table `reels` n’existe pas encore, utiliser `database/migration_add_reels.sql`.
+1. **Créer la base** : importer `database/schema.sql` dans MySQL (tables `boards` et `reels`). Si la table `reels` n’existe pas encore, base existante avec reels : appliquer `database/migration_reels_blob.sql` pour la colonne BLOB.
 2. **Configurer** : copier `.env.example` en `.env` à la racine du projet puis éditer (DB_*, ADMIN_EMAIL, ADMIN_PASSWORD pour l’auth).
 3. **Lancer le serveur** en prenant `public/` comme racine :
    ```bash
@@ -92,7 +92,7 @@ Les vidéos sont stockées en base (BLOB), pas de dossier `storage/` nécessaire
 
 #### Vidéos BLOB et hébergement
 
-Sur beaucoup d’hébergeurs partagés, PHP **ne peut pas créer de dossiers** (restrictions `open_basedir` ou droits). Il faut alors **créer les dossiers à la main** :
+Sur beaucoup d’hébergeurs partagés, PHP **ne peut pas créer de dossiers** (restrictions `open_basedir` ou droits). Les vidéos sont en base (BLOB) ; configurer MySQL max_allowed_packet (ex. 256M). Ancienne procédure (dossiers) :
 
 1. Via **Gestionnaire de fichiers** (File Manager) ou **FTP**, à la racine du projet (ou au chemin indiqué par `STORAGE_PATH` dans `.env`) :
    - Créer le dossier **`storage`**
@@ -124,11 +124,10 @@ antoreli/
 │   ├── View/               # auth/login.php, board/dashboard.php, board/index.php
 │   ├── Core/               # Router, Database, Session
 │   └── config/database.php
-├── storage/                # Créé à la volée (non versionné)
-│   └── reels/              # Fichiers vidéo par board : reels/{board_id}/
 ├── database/
-│   ├── schema.sql          # BDD : boards, reels
-│   └── migration_add_reels.sql  # Optionnel : ajout table reels
+│   ├── schema.sql          # BDD : boards, reels (vidéos en BLOB)
+│   ├── migration_reels_blob.sql  # Base existante : ajout colonne content LONGBLOB
+│   └── migration_add_reels.sql   # Optionnel : ajout table reels
 ├── .env.example            # Exemple pour .env (à la racine)
 └── README.md
 ```
