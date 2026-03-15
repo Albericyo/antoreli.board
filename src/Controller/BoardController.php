@@ -15,37 +15,46 @@ class BoardController
 
     public function uploadReel(): void
     {
+        ob_start();
         header('Content-Type: application/json; charset=utf-8');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['error' => 'Méthode non autorisée']);
+            $this->sendUploadError('Méthode non autorisée', 400);
             return;
         }
         if (!Session::isLoggedIn()) {
-            echo json_encode(['error' => 'Non authentifié']);
+            $this->sendUploadError('Non authentifié', 403);
             return;
         }
         try {
             $boardId = isset($_POST['board_id']) ? (int) $_POST['board_id'] : (isset($_GET['board_id']) ? (int) $_GET['board_id'] : 0);
             if (!$boardId || !Board::find($boardId)) {
-                echo json_encode(['error' => 'Board invalide']);
+                $this->sendUploadError('Board invalide', 400);
                 return;
             }
-            if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-                $err = $_FILES['file']['error'] ?? UPLOAD_ERR_OK;
+            if (empty($_FILES['file']) || !isset($_FILES['file']['error'])) {
+                $this->sendUploadError('Aucun fichier reçu (vérifiez post_max_size et upload_max_filesize en PHP)', 400);
+                return;
+            }
+            $err = (int) $_FILES['file']['error'];
+            if ($err !== UPLOAD_ERR_OK) {
                 $msg = $err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE
-                    ? 'Fichier trop volumineux'
-                    : 'Fichier manquant ou erreur d\'upload';
-                echo json_encode(['error' => $msg]);
+                    ? 'Fichier trop volumineux (PHP: upload_max_filesize / post_max_size)'
+                    : ($err === UPLOAD_ERR_NO_FILE ? 'Aucun fichier envoyé' : 'Erreur upload PHP (code ' . $err . ')');
+                $this->sendUploadError($msg, 400);
+                return;
+            }
+            if (empty($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+                $this->sendUploadError('Fichier temporaire invalide', 400);
                 return;
             }
             $file = $_FILES['file'];
             $mime = $file['type'] ?? '';
             if (!in_array($mime, self::ALLOWED_MIMES, true)) {
-                echo json_encode(['error' => 'Type non autorisé (MP4, MOV, WebM uniquement)']);
+                $this->sendUploadError('Type non autorisé (MP4, MOV, WebM uniquement)', 400);
                 return;
             }
             if ($file['size'] > self::MAX_REEL_SIZE) {
-                echo json_encode(['error' => 'Fichier trop volumineux (max 100 Mo)']);
+                $this->sendUploadError('Fichier trop volumineux (max 100 Mo)', 400);
                 return;
             }
             $baseName = preg_replace('/\.[^.]+$/', '', $file['name']);
@@ -59,7 +68,7 @@ class BoardController
             $storageDir = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . '/storage/reels/' . $boardId;
             if (!is_dir($storageDir)) {
                 if (!@mkdir($storageDir, 0755, true)) {
-                    echo json_encode(['error' => 'Impossible de créer le dossier de stockage']);
+                    $this->sendUploadError('Impossible de créer le dossier de stockage (droits écriture)', 500);
                     return;
                 }
             }
@@ -67,15 +76,31 @@ class BoardController
             $filePath = 'reels/' . $boardId . '/' . $fileName;
             $absPath = $storageDir . '/' . $fileName;
             if (!move_uploaded_file($file['tmp_name'], $absPath)) {
-                echo json_encode(['error' => 'Erreur lors de l\'enregistrement du fichier']);
+                $this->sendUploadError('Erreur lors de l\'enregistrement du fichier (droits écriture?)', 500);
                 return;
             }
             $id = Reel::create($boardId, $baseName, $filePath, $mime);
             $url = 'index.php?action=stream-reel&id=' . $id;
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(200);
             echo json_encode(['id' => $id, 'name' => $baseName, 'url' => $url]);
         } catch (\Throwable $e) {
-            echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);
+            $this->sendUploadError('Erreur serveur: ' . $e->getMessage(), 500);
         }
+    }
+
+    /** Envoie une erreur JSON pour l’upload et arrête tout autre envoi. */
+    private function sendUploadError(string $message, int $httpCode = 400): void
+    {
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code($httpCode);
+        echo json_encode(['error' => $message]);
     }
 
     public function streamReel(): void

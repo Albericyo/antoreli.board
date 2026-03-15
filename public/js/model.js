@@ -138,20 +138,30 @@ export function uploadReel(file) {
   form.append('file', file);
   form.append('board_id', String(boardId));
   const url = new URL('index.php?action=upload-reel', window.location.href).href;
-  return fetch(url, { method: 'POST', body: form, credentials: 'same-origin' })
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
+  return fetch(url, { method: 'POST', body: form, credentials: 'same-origin', signal: controller.signal })
     .then(async (res) => {
+      clearTimeout(timeoutId);
       const text = await res.text();
       let data;
       try {
         data = JSON.parse(text);
       } catch {
-        if (!res.ok) throw new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : 'Erreur serveur lors de l\'upload.');
-        throw new Error('Réponse serveur invalide.');
+        const snippet = text.trim().slice(0, 120);
+        const errMsg = snippet ? 'Réponse invalide (début : ' + snippet + '…)' : 'Réponse serveur vide.';
+        if (!res.ok) throw new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : (res.status + ' — ' + errMsg));
+        throw new Error(errMsg);
       }
       if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'upload.');
       if (data.error) throw new Error(data.error);
-      if (data.id == null || !data.name || !data.url) throw new Error('Réponse serveur incomplète.');
+      if (data.id == null || !data.name || !data.url) throw new Error('Réponse serveur incomplète (id/name/url manquants).');
       return { id: Number(data.id), name: data.name, url: data.url };
+    })
+    .catch((err) => {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') throw new Error('Délai dépassé (upload trop long).');
+      throw err;
     });
 }
 
