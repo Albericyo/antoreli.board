@@ -53,6 +53,18 @@ class Router
             $this->dispatchBoard('toggleFinished');
             return;
         }
+        if ($this->action === 'upload-reel') {
+            $this->dispatchBoard('uploadReel');
+            return;
+        }
+        if ($this->action === 'stream-reel') {
+            $this->dispatchBoard('streamReel');
+            return;
+        }
+        if ($this->action === 'delete-reel') {
+            $this->dispatchBoard('deleteReel');
+            return;
+        }
         header('Location: index.php?action=dashboard');
         exit;
     }

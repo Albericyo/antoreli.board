@@ -8,6 +8,9 @@
 declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__);
+if (!defined('PROJECT_ROOT')) {
+    define('PROJECT_ROOT', $projectRoot);
+}
 
 // Charger .env puis la config DB
 require $projectRoot . '/src/Core/Env.php';

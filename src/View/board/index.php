@@ -2,6 +2,7 @@
 $boardId = isset($boardId) ? (int) $boardId : null;
 $boardName = isset($boardName) ? $boardName : 'Shooting sans titre';
 $state = isset($state) ? $state : null;
+$reels = isset($reels) ? $reels : [];
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -14,6 +15,7 @@ $state = isset($state) ? $state : null;
     window.__BOARD_ID__ = <?= $boardId ? (int) $boardId : 'null' ?>;
     window.__BOARD_NAME__ = <?= json_encode($boardName) ?>;
     window.__BOARD_STATE__ = <?= $state !== null ? json_encode($state) : 'null' ?>;
+    window.__BOARD_REELS__ = <?= json_encode($reels) ?>;
   </script>
 </head>
 <body>

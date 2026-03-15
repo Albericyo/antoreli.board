@@ -12,9 +12,9 @@ Application web pour gérer des plans vidéo : import de reels, découpe avec ma
 - **Découper** chaque vidéo en segments avec des points IN/OUT précis
 - **Visualiser** un board par catégorie pour valider les plans avant tournage ou montage
 
-Une version **PHP MVC** avec authentification est disponible : document root `public/`, login par session, base MySQL. Les métadonnées du board restent en localStorage côté client ; la base sert aux utilisateurs (connexion).
+Une version **PHP MVC** avec authentification est disponible : document root `public/`, login par session, base MySQL. Les boards (nom, statut, état JSON) et les **reels** (vidéos) sont stockés : métadonnées en base, fichiers vidéo dans `storage/reels/{board_id}/`. La base sert à l’auth (utilisateur unique défini dans `.env`) et aux données des boards/reels.
 
-L’application se lance depuis le dossier `public/` (voir « Version PHP » ci-dessous).
+L’application se lance depuis le dossier `public/` (voir « Démarrage en local » ci-dessous).
 
 ---
 
@@ -63,9 +63,10 @@ L’application suit une architecture **MVC** (Model-View-Controller) en JavaScr
 
 ### Persistance des données
 
-Les **catégories** et **clips** (noms, IN/OUT, catégories, validations) sont sauvegardés automatiquement dans `localStorage`.
+Sur un **board** (page avec `?action=board&id=X`) :
 
-⚠️ Les **vidéos ne sont pas stockées**. Après un rechargement de page, il faut réimporter les mêmes fichiers. La correspondance se fait par nom de fichier.
+- **Catégories** et **clips** (noms, IN/OUT, catégories, validations) : sauvegardés en base dans `boards.state` (JSON) et éventuellement en `localStorage`.
+- **Vidéos (reels)** : uploadées vers le serveur, enregistrées dans le dossier `storage/reels/{board_id}/` à la racine du projet. Les métadonnées (nom, chemin, type MIME) sont en base dans la table `reels`. Le dossier `storage/` est créé automatiquement à la volée lors du premier upload. Lecture des vidéos via l’endpoint `?action=stream-reel&id=...` (protégé par l’auth).
 
 ---
 
@@ -75,21 +76,19 @@ L’application (PHP MVC + login) doit être servie depuis le dossier **`public/
 
 ### Démarrage (PHP + MySQL)
 
-1. **Créer la base** : importer `database/schema.sql` dans MySQL.
-2. **Configurer** : copier `.env.example` en `.env` à la racine du projet puis éditer `.env` (DB_HOST, DB_NAME, DB_USER, DB_PASS).
-3. **Créer un utilisateur** (CLI) :
-   ```bash
-   php database/create_user.php votre@email.com VotreMotDePasse
-   ```
-4. **Lancer le serveur** en prenant `public/` comme racine :
+1. **Créer la base** : importer `database/schema.sql` dans MySQL (tables `boards` et `reels`). Si la table `reels` n’existe pas encore, utiliser `database/migration_add_reels.sql`.
+2. **Configurer** : copier `.env.example` en `.env` à la racine du projet puis éditer (DB_*, ADMIN_EMAIL, ADMIN_PASSWORD pour l’auth).
+3. **Lancer le serveur** en prenant `public/` comme racine :
    ```bash
    cd public && php -S localhost:8765
    ```
    Ou configurer Apache/Nginx avec document root = `public/`.
-5. **Ouvrir** `http://localhost:8765` → page de login, puis tableau de bord.
+4. **Ouvrir** `http://localhost:8765` → page de login (identifiants du `.env`), puis tableau de bord.
 
 **Tableau de bord** : liste des shooting boards, création, ouverture, marquer terminé, supprimer.  
-Routes : `?action=login`, `?action=logout`, `?action=dashboard` (accueil après login), `?action=board&id=X` (éditer un board), `?action=new-board` (POST), `?action=delete-board`, `?action=toggle-finished`.
+**Routes** : `?action=login`, `?action=logout`, `?action=dashboard`, `?action=board&id=X`, `?action=new-board` (POST), `?action=save-board` (POST JSON), `?action=delete-board`, `?action=toggle-finished`, `?action=upload-reel` (POST multipart, champ `file` + `board_id`), `?action=stream-reel&id=X` (GET, lecture vidéo), `?action=delete-reel` (POST, paramètre `id`).
+
+Le dossier **`storage/reels/`** est créé automatiquement lors du premier upload ; il est ignoré par git (`.gitignore`).
 
 ---
 
@@ -103,13 +102,15 @@ antoreli/
 │   └── js/                 # App board (app.js, model, view, controller, storage, utils)
 ├── src/
 │   ├── Controller/         # AuthController, BoardController
-│   ├── Model/              # User, Board
+│   ├── Model/              # Board, Reel
 │   ├── View/               # auth/login.php, board/dashboard.php, board/index.php
 │   ├── Core/               # Router, Database, Session
 │   └── config/database.php
+├── storage/                # Créé à la volée (non versionné)
+│   └── reels/              # Fichiers vidéo par board : reels/{board_id}/
 ├── database/
-│   ├── schema.sql          # BDD : users, boards
-│   └── create_user.php     # CLI : créer un utilisateur
+│   ├── schema.sql          # BDD : boards, reels
+│   └── migration_add_reels.sql  # Optionnel : ajout table reels
 ├── .env.example            # Exemple pour .env (à la racine)
 └── README.md
 ```

@@ -4,6 +4,7 @@ import {
   getCatClips,
   addReel,
   removeReel,
+  uploadReel,
   setActiveReel,
   addCategory,
   removeCategory,
@@ -83,10 +84,26 @@ export function rmCat(cat) {
   renderCats();
 }
 
-export function addFiles(inp) {
-  if (!inp?.files) return;
-  Array.from(inp.files).forEach((f) => addReel(f));
+export async function addFiles(inp) {
+  if (!inp?.files || !inp.files.length) return;
+  const boardId = typeof window !== 'undefined' && window.__BOARD_ID__;
+  const files = Array.from(inp.files);
   inp.value = '';
+  if (boardId) {
+    const finp = document.getElementById('finp');
+    if (finp) finp.disabled = true;
+    for (const file of files) {
+      try {
+        const result = await uploadReel(file);
+        addReel(result);
+      } catch (err) {
+        alert(err.message || 'Erreur lors de l\'upload.');
+      }
+    }
+    if (finp) finp.disabled = false;
+  } else {
+    files.forEach((f) => addReel(f));
+  }
   renderReels();
 }
 
@@ -95,9 +112,12 @@ export function selReel(id) {
   renderReels();
 }
 
-export function rmReel(id) {
-  removeReel(id);
+export async function rmReel(id) {
+  await removeReel(id);
   renderReels();
+  renderTabs();
+  loadVid();
+  renderCList();
 }
 
 export function switchTab(id) {
@@ -336,7 +356,7 @@ export function bindEvents() {
     else if (action === 'selReel' && id) selReel(id);
     else if (action === 'rmReel' && id) {
       e.stopPropagation();
-      rmReel(id);
+      rmReel(id).then(() => {}).catch(() => {});
     } else if (action === 'switchTab' && id) switchTab(id);
     else if (action === 'rmClip' && id) {
       e.stopPropagation();

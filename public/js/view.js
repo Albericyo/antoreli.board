@@ -33,8 +33,8 @@ export function renderReels() {
   }
   listEl.innerHTML = state.reels
     .map((r) => {
-      const n = state.clips.filter((c) => c.rid === r.id).length;
-      return `<div class="ritem ${state.activeId === r.id ? 'sel' : ''}" data-action="selReel" data-id="${r.id}">
+      const n = state.clips.filter((c) => c.rid == r.id).length;
+      return `<div class="ritem ${state.activeId == r.id ? 'sel' : ''}" data-action="selReel" data-id="${r.id}">
         <div class="rthumb">🎬</div>
         <div class="rinfo"><div class="rname">${esc(r.name)}</div><div class="rmeta">${n} plan${n !== 1 ? 's' : ''}</div></div>
         <span class="del" data-action="rmReel" data-id="${r.id}">×</span>
@@ -53,7 +53,7 @@ export function renderTabs() {
   el.innerHTML = state.reels
     .map(
       (r) =>
-        `<div class="tab ${state.activeId === r.id ? 'on' : ''}" data-action="switchTab" data-id="${r.id}">${esc(r.name)}</div>`
+        `<div class="tab ${state.activeId == r.id ? 'on' : ''}" data-action="switchTab" data-id="${r.id}">${esc(r.name)}</div>`
     )
     .join('');
 }
@@ -61,7 +61,7 @@ export function renderTabs() {
 export function renderCList() {
   const el = document.getElementById('clist');
   if (!el) return;
-  const arr = state.clips.filter((c) => c.rid === state.activeId);
+  const arr = state.clips.filter((c) => c.rid == state.activeId);
   if (!arr.length) {
     el.innerHTML = '<div class="empty">Marque IN → OUT puis ajoute un plan.</div>';
     return;
@@ -88,7 +88,7 @@ export function renderMarks() {
   const vid = document.getElementById('vid');
   const pmarks = document.getElementById('pmarks');
   if (!vid || !vid.duration || !pmarks) return;
-  const clips = state.clips.filter((c) => c.rid === state.activeId);
+  const clips = state.clips.filter((c) => c.rid == state.activeId);
   pmarks.innerHTML = clips
     .map((c) => {
       const l = (c.in / vid.duration) * 100;
