@@ -118,26 +118,34 @@ export async function addFiles(inp) {
       if (finp) finp.disabled = true;
       setUploadDebugDetail(null);
       setUploadMsg('Import en cours…');
+      const longUploadHint = setTimeout(() => {
+        setUploadMsg('Envoi en cours… (si rien ne change : vérifiez la taille du fichier, post_max_size et upload_max_filesize sur le serveur)', false);
+      }, 20000);
       let okCount = 0;
-      for (const file of files) {
-        try {
-          const result = await uploadReel(file);
-          addReel(result);
-          okCount += 1;
-        } catch (err) {
-          const msg = (err.message === 'Failed to fetch' || err.message === 'Load failed')
-            ? 'Connexion impossible. Vérifiez le réseau et que l\'application est bien déployée.'
-            : (err.message || 'Erreur lors de l\'upload.');
-          if (err.debug) {
-            setUploadMsg(msg + ' — Voir détail ci‑dessous.', true);
-            setUploadDebugDetail(err.debug);
-            console.error('Upload debug:', err.debug);
-          } else {
-            setUploadMsg(msg, true);
-            setUploadDebugDetail(null);
+      try {
+        for (const file of files) {
+          try {
+            const result = await uploadReel(file);
+            addReel(result);
+            okCount += 1;
+          } catch (err) {
+            clearTimeout(longUploadHint);
+            const msg = (err.message === 'Failed to fetch' || err.message === 'Load failed')
+              ? 'Connexion impossible. Vérifiez le réseau et que l\'application est bien déployée.'
+              : (err.message || 'Erreur lors de l\'upload.');
+            if (err.debug) {
+              setUploadMsg(msg + ' — Voir détail ci‑dessous.', true);
+              setUploadDebugDetail(err.debug);
+              console.error('Upload debug:', err.debug);
+            } else {
+              setUploadMsg(msg, true);
+              setUploadDebugDetail(null);
+            }
+            alert(msg);
           }
-          alert(msg);
         }
+      } finally {
+        clearTimeout(longUploadHint);
       }
       if (okCount > 0) {
         setUploadDebugDetail(null);

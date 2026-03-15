@@ -145,14 +145,25 @@ export function uploadReel(file) {
     .then(async (res) => {
       clearTimeout(timeoutId);
       const text = await res.text();
+      if (typeof window !== 'undefined' && window.console && window.console.log) {
+        window.console.log('[upload-reel]', res.status, res.statusText, 'longueur réponse:', text.length);
+      }
+      if (res.status === 413) {
+        const e = new Error('Fichier trop volumineux (413). Réduisez la taille ou augmentez post_max_size / upload_max_filesize sur le serveur.');
+        e.debug = { status: 413, response_preview: text.trim().slice(0, 300) };
+        throw e;
+      }
       let data;
       try {
         data = JSON.parse(text);
       } catch {
-        const snippet = text.trim().slice(0, 120);
-        const errMsg = snippet ? 'Réponse invalide (début : ' + snippet + '…)' : 'Réponse serveur vide.';
-        if (!res.ok) throw new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : (res.status + ' — ' + errMsg));
-        throw new Error(errMsg);
+        const snippet = text.trim().slice(0, 500);
+        const errMsg = text.trim() === ''
+          ? 'Réponse serveur vide (code ' + res.status + '). Vérifiez les logs PHP, post_max_size et que l’URL d’upload est correcte.'
+          : (res.status + ' — Réponse invalide (pas du JSON). Début : ' + snippet + (snippet.length >= 500 ? '…' : ''));
+        const e = new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : errMsg);
+        e.debug = { status: res.status, response_preview: text.trim().slice(0, 500), url };
+        throw e;
       }
       if (!res.ok) {
         const e = new Error(data.error || 'Erreur lors de l\'upload.');
