@@ -123,6 +123,21 @@ export function catMatch(c, cat) {
   return cat === 'Sans catégorie' ? cc === '' : cc === cat;
 }
 
+// #region agent log
+function _uploadLog(payload) {
+  const entry = { sessionId: '3e1bcf', location: 'model.js:uploadReel', timestamp: Date.now(), ...payload };
+  try {
+    fetch('http://127.0.0.1:7810/ingest/e18b88f1-b5a3-42ff-93b4-2110dc768b1a', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '3e1bcf' }, body: JSON.stringify(entry) }).catch(() => {});
+  } catch (_) {}
+  try {
+    if (typeof window !== 'undefined' && window.location) {
+      const logUrl = window.location.origin + window.location.pathname + '?action=upload-debug-log';
+      fetch(logUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(entry) }).catch(() => {});
+    }
+  } catch (_) {}
+}
+// #endregion
+
 /**
  * Envoie un fichier vidéo au serveur et retourne { id, name, url }. Les reels sont enregistrés en base (table reels + fichier sur disque).
  * @param {File} file
@@ -137,14 +152,19 @@ export function uploadReel(file) {
   const form = new FormData();
   form.append('file', file);
   form.append('board_id', String(boardId));
-  const url = new URL('index.php?action=upload-reel', window.location.href).href;
+  // Même page, seul le paramètre action change (évite les erreurs d'URL en sous-dossier)
+  const url = (typeof window !== 'undefined' && window.location)
+    ? (window.location.origin + window.location.pathname + '?action=upload-reel')
+    : 'index.php?action=upload-reel';
+  _uploadLog({ message: 'upload start', data: { url, fileSize: file.size, fileName: file.name, fileType: file.type, boardId }, hypothesisId: 'H3,H5' });
   const controller = new AbortController();
-  const timeoutMs = 100; // 10 min pour grosses vidéos / connexion lente
+  const timeoutMs = 600000; // 10 min pour grosses vidéos / connexion lente
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, { method: 'POST', body: form, credentials: 'same-origin', signal: controller.signal })
     .then(async (res) => {
       clearTimeout(timeoutId);
       const text = await res.text();
+      _uploadLog({ message: 'upload response', data: { status: res.status, responseLength: text.length, responsePreview: text.trim().slice(0, 400) }, hypothesisId: 'H2,H3,H4,H5' });
       if (typeof window !== 'undefined' && window.console && window.console.log) {
         window.console.log('[upload-reel]', res.status, res.statusText, 'longueur réponse:', text.length);
       }
@@ -163,11 +183,13 @@ export function uploadReel(file) {
           : (res.status + ' — Réponse invalide (pas du JSON). Début : ' + snippet + (snippet.length >= 500 ? '…' : ''));
         const e = new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : errMsg);
         e.debug = { status: res.status, response_preview: text.trim().slice(0, 500), url };
+        _uploadLog({ message: 'upload response not json', data: { status: res.status, responsePreview: text.trim().slice(0, 400) }, hypothesisId: 'H5' });
         throw e;
       }
       if (!res.ok) {
         const e = new Error(data.error || 'Erreur lors de l\'upload.');
         if (data.debug) e.debug = data.debug;
+        _uploadLog({ message: 'upload server error', data: { status: res.status, error: data.error, debug: data.debug }, hypothesisId: 'H3,H4' });
         throw e;
       }
       if (data.error) {
@@ -184,6 +206,7 @@ export function uploadReel(file) {
     })
     .catch((err) => {
       clearTimeout(timeoutId);
+      _uploadLog({ message: 'upload fetch failed', data: { errName: err.name, errMessage: err.message }, hypothesisId: 'H1,H2' });
       if (err.name === 'AbortError') throw new Error('Délai dépassé (upload trop long).');
       throw err;
     });

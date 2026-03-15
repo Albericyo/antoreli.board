@@ -69,6 +69,10 @@ class Router
             $this->dispatchBoard('uploadDebug');
             return;
         }
+        if ($this->action === 'upload-debug-log') {
+            $this->dispatchBoard('uploadDebugLog');
+            return;
+        }
         header('Location: index.php?action=dashboard');
         exit;
     }

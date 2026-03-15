@@ -191,6 +191,21 @@ class BoardController
         ];
     }
 
+    /** POST ?action=upload-debug-log — enregistre une ligne de log (NDJSON) pour le debug upload. */
+    public function uploadDebugLog(): void
+    {
+        $raw = file_get_contents('php://input');
+        if ($raw !== false) {
+            $payload = json_decode($raw, true);
+            if (is_array($payload)) {
+                $logPath = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . DIRECTORY_SEPARATOR . 'debug-3e1bcf.log';
+                @file_put_contents($logPath, json_encode($payload) . "\n", FILE_APPEND | LOCK_EX);
+            }
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => true]);
+    }
+
     /** GET ?action=upload-debug — retourne la config upload et l'état du stockage (pour debug). */
     public function uploadDebug(): void
     {
