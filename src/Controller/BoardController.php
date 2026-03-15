@@ -153,30 +153,13 @@ class BoardController
     private function getUploadDebugInfo(?int $boardId = null): array
     {
         $projectRoot = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
-        $storageBase = get_storage_path();
-        $reelsDir = $storageBase . '/reels';
-        $testDir = $boardId ? $reelsDir . '/' . $boardId : $reelsDir;
-        $storageExists = is_dir($storageBase);
-        $storageWritable = $storageExists && is_writable($storageBase);
-        $reelsExists = is_dir($reelsDir);
-        $reelsWritable = $reelsExists && is_writable($reelsDir);
-        $testDirExists = is_dir($testDir);
-        $testDirWritable = $testDirExists && is_writable($testDir);
-        if (!$testDirExists && $storageWritable) {
-            $testDirWritable = @mkdir($testDir, 0755, true) && is_writable($testDir);
-        }
         return [
             'php_version' => PHP_VERSION,
             'upload_max_filesize' => ini_get('upload_max_filesize'),
             'post_max_size' => ini_get('post_max_size'),
             'file_uploads' => ini_get('file_uploads'),
             'project_root' => $projectRoot,
-            'storage_path' => $storageBase,
-            'storage_exists' => $storageExists,
-            'storage_writable' => $storageWritable,
-            'reels_dir_writable' => $reelsWritable,
-            'test_dir' => $testDir,
-            'test_dir_writable' => $testDirWritable,
+            'storage_type' => 'BLOB',
             'open_basedir' => ini_get('open_basedir') ?: '(vide)',
         ];
     }

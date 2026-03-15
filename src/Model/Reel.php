@@ -58,6 +58,9 @@ class Reel
      */
     public static function getContentStream(int $id): ?array
     {
+        $stream = null;
+        $mimeType = '';
+        $contentLength = 0;
         $pdo = Database::getConnection();
         $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
         $stmt = $pdo->prepare('SELECT content, mime_type, LENGTH(content) AS content_length FROM reels WHERE id = ? LIMIT 1');
@@ -67,13 +70,20 @@ class Reel
         $stmt->bindColumn(3, $contentLength, PDO::PARAM_INT);
         $fetched = $stmt->fetch(PDO::FETCH_BOUND);
         $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
-        if (!$fetched || !is_resource($stream)) {
+        if (!$fetched || ($stream === null && $contentLength > 0)) {
+            return null;
+        }
+        $len = (int) $contentLength;
+        if ($len <= 0 && is_string($stream)) {
+            $len = strlen($stream);
+        }
+        if ($len <= 0) {
             return null;
         }
         return [
             'stream' => $stream,
             'mime_type' => $mimeType,
-            'content_length' => (int) $contentLength,
+            'content_length' => $len,
         ];
     }
 

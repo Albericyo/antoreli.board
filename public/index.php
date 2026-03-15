@@ -16,7 +16,6 @@ try {
     require $projectRoot . '/src/Core/Env.php';
     \App\Core\Env::load($projectRoot . '/.env');
     require $projectRoot . '/src/config/database.php';
-    require $projectRoot . '/src/config/storage.php';
 
     spl_autoload_register(function (string $class): void {
         $prefix = 'App\\';
