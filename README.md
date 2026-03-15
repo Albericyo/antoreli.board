@@ -106,6 +106,8 @@ Après cela, l’application pourra enregistrer les vidéos dans `storage/reels/
 
 Pour accepter des fichiers de plusieurs gigaoctets : dans `.env`, définir **`MAX_UPLOAD_MB=4096`** (ou la valeur en Mo voulue). Sur le serveur, créer **`.user.ini`** à la racine du site avec `upload_max_filesize = 4G`, `post_max_size = 4G`, `max_execution_time = 600`. L'upload de plusieurs Go peut prendre longtemps (connexion stable conseillée).
 
+**Important — Timeout à 2 secondes (LiteSpeed)** : Sur Hostinger, le phpinfo affiche souvent **`hard_timeout = 2`**, ce qui coupe toute requête après 2 secondes (d’où les uploads qui « ne répondent pas »). Le projet inclut **`public/.htaccess`** et **`public/.user.ini`** pour augmenter les timeouts (`noconntimeout`, `max_execution_time`, `max_input_time`). Si l’upload est encore coupé, vérifier que ces fichiers sont bien dans le **document root** (là où se trouve `index.php`). Sinon, contacter le support Hostinger pour augmenter **hard_timeout** ou le timeout de connexion LiteSpeed.
+
 ---
 
 ## Structure du projet
