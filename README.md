@@ -12,7 +12,7 @@ Application web pour gérer des plans vidéo : import de reels, découpe avec ma
 - **Découper** chaque vidéo en segments avec des points IN/OUT précis
 - **Visualiser** un board par catégorie pour valider les plans avant tournage ou montage
 
-L’application fonctionne entièrement dans le navigateur, sans backend ni compte utilisateur. Les métadonnées (catégories, clips, validations) sont conservées dans le stockage local du navigateur.
+Une version **PHP MVC** avec authentification est disponible : document root `public/`, login par session, base MySQL. Les métadonnées du board restent en localStorage côté client ; la base sert aux utilisateurs (connexion).
 
 **Utilisation sur Windows** : placez le projet sur un disque local (`C:\`, `D:\`, etc.), double-cliquez sur `start.bat`. Aucun WSL requis.
 
@@ -111,6 +111,23 @@ http://localhost:8765
 
 Avec `serve` (Node.js), le port par défaut est souvent 3000 : `http://localhost:3000`.
 
+### Version PHP (MVC + login + MySQL)
+
+1. **Créer la base** : importer `database/schema.sql` dans MySQL.
+2. **Configurer** : copier `.env.example` en `.env` à la racine du projet puis éditer `.env` (DB_HOST, DB_NAME, DB_USER, DB_PASS).
+3. **Créer un utilisateur** (CLI) :
+   ```bash
+   php database/create_user.php votre@email.com VotreMotDePasse
+   ```
+4. **Lancer le serveur** en prenant `public/` comme racine :
+   ```bash
+   cd public && php -S localhost:8765
+   ```
+   Ou configurer Apache/Nginx avec document root = `public/`.
+5. **Ouvrir** `http://localhost:8765` → page de login, puis accès au board.
+
+Routes : `?action=login` (connexion), `?action=logout` (déconnexion), pas de paramètre ou `?action=board` (app protégée).
+
 ### Alternative (fichier local)
 
 Sur certains navigateurs (Chrome, Edge), vous pouvez ouvrir `index.html` directement avec `file://`.  
@@ -122,20 +139,22 @@ Firefox et Safari bloquent généralement l’exécution des modules ES6 en `fil
 
 ```
 antoreli/
-├── index.html          # Point d'entrée HTML
-├── app.html            # Variante (si présente)
-├── start.bat           # Démarrage rapide (Windows)
-├── start.sh            # Démarrage rapide (Linux / WSL)
-├── css/
-│   └── styles.css      # Feuilles de style
-├── js/
-│   ├── app.js          # Initialisation (chargement, bindEvents)
-│   ├── model.js        # État et opérations (MVC — Model)
-│   ├── view.js         # Rendu DOM (MVC — View)
-│   ├── controller.js   # Événements et logique (MVC — Controller)
-│   ├── storage.js      # Persistance localStorage
-│   └── utils.js        # Utilitaires
-├── .gitignore
+├── public/                 # Racine web (document root)
+│   ├── index.php           # Front controller PHP (login + board)
+│   ├── css/styles.css
+│   └── js/                 # App board (app.js, model, view, controller, storage, utils)
+├── src/
+│   ├── Controller/         # AuthController, BoardController
+│   ├── Model/              # User
+│   ├── View/               # auth/login.php, board/index.php
+│   ├── Core/               # Router, Database, Session
+│   └── config/database.php
+├── database/
+│   ├── schema.sql          # Création BDD + table users
+│   └── create_user.php     # CLI : créer un utilisateur
+├── .env.example        # Exemple pour .env (à la racine)
+├── index.html              # Ancien point d'entrée (sans auth)
+├── start.bat / start.sh
 └── README.md
 ```
 
