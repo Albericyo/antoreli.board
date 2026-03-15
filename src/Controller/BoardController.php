@@ -9,32 +9,29 @@ class BoardController
 {
     public function dashboard(): void
     {
-        $userId = Session::getUserId();
-        if (!$userId) {
+        if (!Session::isLoggedIn()) {
             header('Location: index.php?action=login');
             exit;
         }
-        $boards = Board::listByUser($userId);
+        $boards = Board::listAll();
         require __DIR__ . '/../View/board/dashboard.php';
     }
 
     public function newBoard(): void
     {
-        $userId = Session::getUserId();
-        if (!$userId) {
+        if (!Session::isLoggedIn()) {
             header('Location: index.php?action=login');
             exit;
         }
         $name = trim($_POST['name'] ?? '') ?: 'Shooting sans titre';
-        $id = Board::create($userId, $name);
+        $id = Board::create($name);
         header('Location: index.php?action=board&id=' . $id);
         exit;
     }
 
     public function index(): void
     {
-        $userId = Session::getUserId();
-        if (!$userId) {
+        if (!Session::isLoggedIn()) {
             header('Location: index.php?action=login');
             exit;
         }
@@ -43,7 +40,7 @@ class BoardController
             header('Location: index.php?action=dashboard');
             exit;
         }
-        $board = Board::find($boardId, $userId);
+        $board = Board::find($boardId);
         if (!$board) {
             header('Location: index.php?action=dashboard');
             exit;
@@ -63,8 +60,7 @@ class BoardController
             header('Location: index.php?action=dashboard');
             exit;
         }
-        $userId = Session::getUserId();
-        if (!$userId) {
+        if (!Session::isLoggedIn()) {
             header('Content-Type: application/json');
             echo json_encode(['ok' => false, 'error' => 'Non authentifié']);
             exit;
@@ -78,7 +74,7 @@ class BoardController
             echo json_encode(['ok' => false, 'error' => 'ID manquant']);
             exit;
         }
-        $board = Board::find($id, $userId);
+        $board = Board::find($id);
         if (!$board) {
             header('Content-Type: application/json');
             echo json_encode(['ok' => false, 'error' => 'Board introuvable']);
@@ -92,7 +88,7 @@ class BoardController
             $data['state'] = $state;
         }
         if ($data !== []) {
-            Board::update($id, $userId, $data);
+            Board::update($id, $data);
         }
         header('Content-Type: application/json');
         echo json_encode(['ok' => true]);
@@ -100,14 +96,13 @@ class BoardController
 
     public function deleteBoard(): void
     {
-        $userId = Session::getUserId();
-        if (!$userId) {
+        if (!Session::isLoggedIn()) {
             header('Location: index.php?action=login');
             exit;
         }
         $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
         if ($id) {
-            Board::delete($id, $userId);
+            Board::delete($id);
         }
         header('Location: index.php?action=dashboard');
         exit;
@@ -115,14 +110,13 @@ class BoardController
 
     public function toggleFinished(): void
     {
-        $userId = Session::getUserId();
-        if (!$userId) {
+        if (!Session::isLoggedIn()) {
             header('Location: index.php?action=login');
             exit;
         }
         $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
         if ($id) {
-            Board::toggleFinished($id, $userId);
+            Board::toggleFinished($id);
         }
         header('Location: index.php?action=dashboard');
         exit;

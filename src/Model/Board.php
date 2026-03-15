@@ -7,32 +7,31 @@ use PDO;
 
 class Board
 {
-    public static function listByUser(int $userId): array
+    public static function listAll(): array
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT id, name, finished, created_at FROM boards WHERE user_id = ? ORDER BY created_at DESC');
-        $stmt->execute([$userId]);
+        $stmt = $pdo->query('SELECT id, name, finished, created_at FROM boards ORDER BY created_at DESC');
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function find(int $id, int $userId): ?array
+    public static function find(int $id): ?array
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT id, name, finished, state, created_at FROM boards WHERE id = ? AND user_id = ? LIMIT 1');
-        $stmt->execute([$id, $userId]);
+        $stmt = $pdo->prepare('SELECT id, name, finished, state, created_at FROM boards WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
 
-    public static function create(int $userId, string $name = 'Shooting sans titre'): int
+    public static function create(string $name = 'Shooting sans titre'): int
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('INSERT INTO boards (user_id, name) VALUES (?, ?)');
-        $stmt->execute([$userId, $name]);
+        $stmt = $pdo->prepare('INSERT INTO boards (name) VALUES (?)');
+        $stmt->execute([$name]);
         return (int) $pdo->lastInsertId();
     }
 
-    public static function update(int $id, int $userId, array $data): bool
+    public static function update(int $id, array $data): bool
     {
         $allowed = ['name', 'finished', 'state'];
         $set = [];
@@ -56,28 +55,27 @@ class Board
             return false;
         }
         $params[] = $id;
-        $params[] = $userId;
-        $sql = 'UPDATE boards SET ' . implode(', ', $set) . ' WHERE id = ? AND user_id = ?';
+        $sql = 'UPDATE boards SET ' . implode(', ', $set) . ' WHERE id = ?';
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->rowCount() > 0;
     }
 
-    public static function delete(int $id, int $userId): bool
+    public static function delete(int $id): bool
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('DELETE FROM boards WHERE id = ? AND user_id = ?');
-        $stmt->execute([$id, $userId]);
+        $stmt = $pdo->prepare('DELETE FROM boards WHERE id = ?');
+        $stmt->execute([$id]);
         return $stmt->rowCount() > 0;
     }
 
-    public static function toggleFinished(int $id, int $userId): bool
+    public static function toggleFinished(int $id): bool
     {
-        $board = self::find($id, $userId);
+        $board = self::find($id);
         if (!$board) {
             return false;
         }
-        return self::update($id, $userId, ['finished' => !((bool) $board['finished'])]);
+        return self::update($id, ['finished' => !((bool) $board['finished'])]);
     }
 }

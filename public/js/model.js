@@ -13,13 +13,29 @@ export const state = {
   vIdx: 0
 };
 
+let persistToServerTimeout = null;
+
 function persist() {
-  storage.save({
+  const data = {
     cats: state.cats,
     clips: state.clips.map(({ id, rid, rname, in: i, out: o, name, cat, sim, done }) => ({
       id, rid, rname, in: i, out: o, name, cat, sim, done
     }))
-  });
+  };
+  storage.save(data);
+  if (typeof window !== 'undefined' && typeof window.__BOARD_ID__ === 'number') {
+    if (persistToServerTimeout) clearTimeout(persistToServerTimeout);
+    persistToServerTimeout = setTimeout(() => {
+      persistToServerTimeout = null;
+      const sname = document.getElementById('sname');
+      const name = sname ? sname.value.trim() || 'Shooting sans titre' : 'Shooting sans titre';
+      fetch('index.php?action=save-board', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: window.__BOARD_ID__, name, state: data })
+      }).catch(() => {});
+    }, 800);
+  }
 }
 
 export function loadFromStorage() {

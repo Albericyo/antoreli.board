@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Core\Session;
-use App\Model\User;
 
 class AuthController
 {
@@ -30,13 +29,31 @@ class AuthController
             header('Location: index.php?action=login');
             exit;
         }
-        $user = User::verifyPassword($email, $password);
-        if (!$user) {
+        $adminEmail = trim($_ENV['ADMIN_EMAIL'] ?? '');
+        $adminPassword = $_ENV['ADMIN_PASSWORD'] ?? '';
+        $adminPasswordHash = trim($_ENV['ADMIN_PASSWORD_HASH'] ?? '');
+        if ($adminEmail === '') {
+            Session::setError('Configuration manquante (ADMIN_EMAIL).');
+            header('Location: index.php?action=login');
+            exit;
+        }
+        if ($email !== $adminEmail) {
             Session::setError('Identifiants incorrects.');
             header('Location: index.php?action=login');
             exit;
         }
-        Session::setUser((int) $user['id'], $user['email']);
+        $passwordOk = false;
+        if ($adminPasswordHash !== '') {
+            $passwordOk = password_verify($password, $adminPasswordHash);
+        } else {
+            $passwordOk = ($password === $adminPassword);
+        }
+        if (!$passwordOk) {
+            Session::setError('Identifiants incorrects.');
+            header('Location: index.php?action=login');
+            exit;
+        }
+        Session::setUser(1, $adminEmail);
         header('Location: index.php?action=dashboard');
         exit;
     }
