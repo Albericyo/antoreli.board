@@ -12,7 +12,7 @@ Application web pour gérer des plans vidéo : import de reels, découpe avec ma
 - **Découper** chaque vidéo en segments avec des points IN/OUT précis
 - **Visualiser** un board par catégorie pour valider les plans avant tournage ou montage
 
-Une version **PHP MVC** avec authentification est disponible : document root `public/`, login par session, base MySQL. Les boards (nom, statut, état JSON) et les **reels** (vidéos) sont stockés : métadonnées en base, fichiers vidéo dans `storage/reels/{board_id}/`. La base sert à l’auth (utilisateur unique défini dans `.env`) et aux données des boards/reels.
+Une version **PHP MVC** avec authentification est disponible : document root `public/`, login par session, base MySQL. Les boards (nom, statut, état JSON) et les **reels** (vidéos) sont stockés : métadonnées en base, fichiers vidéo en base (BLOB dans la table `reels`). La base sert à l’auth (utilisateur unique défini dans `.env`) et aux données des boards/reels.
 
 L’application se lance depuis le dossier `public/` (voir « Démarrage en local » ci-dessous).
 
@@ -66,7 +66,7 @@ L’application suit une architecture **MVC** (Model-View-Controller) en JavaScr
 Sur un **board** (page avec `?action=board&id=X`) :
 
 - **Catégories** et **clips** (noms, IN/OUT, catégories, validations) : sauvegardés en base dans `boards.state` (JSON) et éventuellement en `localStorage`.
-- **Vidéos (reels)** : uploadées vers le serveur, enregistrées dans le dossier `storage/reels/{board_id}/` à la racine du projet. Les métadonnées (nom, chemin, type MIME) sont en base dans la table `reels`. Le dossier `storage/` est créé automatiquement à la volée lors du premier upload. Lecture des vidéos via l’endpoint `?action=stream-reel&id=...` (protégé par l’auth).
+- **Vidéos (reels)** : uploadées vers le serveur, stockées en base dans la table `reels` (colonne `content` LONGBLOB, jusqu'à 4 Go). Métadonnées (nom, type MIME) en base. MySQL : `max_allowed_packet` >= taille max vidéo (ex. 256M). Lecture via l’endpoint `?action=stream-reel&id=...` (protégé par l’auth).
 
 ---
 
@@ -88,9 +88,9 @@ L’application (PHP MVC + login) doit être servie depuis le dossier **`public/
 **Tableau de bord** : liste des shooting boards, création, ouverture, marquer terminé, supprimer.  
 **Routes** : `?action=login`, `?action=logout`, `?action=dashboard`, `?action=board&id=X`, `?action=new-board` (POST), `?action=save-board` (POST JSON), `?action=delete-board`, `?action=toggle-finished`, `?action=upload-reel` (POST multipart, champ `file` + `board_id`), `?action=stream-reel&id=X` (GET, lecture vidéo), `?action=delete-reel` (POST, paramètre `id`).
 
-Le dossier **`storage/reels/`** est créé automatiquement lors du premier upload ; il est ignoré par git (`.gitignore`).
+Les vidéos sont stockées en base (BLOB), pas de dossier `storage/` nécessaire.
 
-#### Hébergement partagé (Hostinger, etc.)
+#### Vidéos BLOB et hébergement
 
 Sur beaucoup d’hébergeurs partagés, PHP **ne peut pas créer de dossiers** (restrictions `open_basedir` ou droits). Il faut alors **créer les dossiers à la main** :
 
