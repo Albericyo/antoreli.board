@@ -10,7 +10,7 @@ class AuthController
     public function showLogin(): void
     {
         if (Session::isLoggedIn()) {
-            header('Location: index.php');
+            header('Location: index.php?action=dashboard');
             exit;
         }
         $error = Session::getError();
@@ -37,7 +37,7 @@ class AuthController
             exit;
         }
         Session::setUser((int) $user['id'], $user['email']);
-        header('Location: index.php');
+        header('Location: index.php?action=dashboard');
         exit;
     }
 

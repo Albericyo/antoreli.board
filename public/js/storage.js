@@ -1,8 +1,13 @@
-const STORAGE_KEY = 'shooting-board';
+function getStorageKey() {
+  if (typeof window !== 'undefined' && window.__BOARD_ID__) {
+    return 'shooting-board-' + window.__BOARD_ID__;
+  }
+  return 'shooting-board';
+}
 
 export function load() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey());
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -12,7 +17,7 @@ export function load() {
 
 export function save(data) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(getStorageKey(), JSON.stringify(data));
   } catch (e) {
     console.warn('Erreur lors de la sauvegarde:', e);
   }

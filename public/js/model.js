@@ -23,12 +23,30 @@ function persist() {
 }
 
 export function loadFromStorage() {
+  if (typeof window !== 'undefined' && window.__BOARD_STATE__) {
+    const data = window.__BOARD_STATE__;
+    if (Array.isArray(data.cats) && data.cats.length) state.cats = data.cats;
+    if (Array.isArray(data.clips)) {
+      state.clips = data.clips.map((c) => ({ ...c, rsrc: null }));
+    }
+    return;
+  }
   const data = storage.load();
   if (!data) return;
   if (Array.isArray(data.cats) && data.cats.length) state.cats = data.cats;
   if (Array.isArray(data.clips)) {
     state.clips = data.clips.map((c) => ({ ...c, rsrc: null }));
   }
+}
+
+/** État sérialisable pour sauvegarde serveur (sans rsrc). */
+export function getStateForSave() {
+  return {
+    cats: state.cats,
+    clips: state.clips.map(({ id, rid, rname, in: i, out: o, name, cat, sim, done }) => ({
+      id, rid, rname, in: i, out: o, name, cat, sim, done
+    }))
+  };
 }
 
 export function getActiveReel() {

@@ -1,19 +1,28 @@
 <?php
-$userEmail = \App\Core\Session::getEmail();
+$boardId = isset($boardId) ? (int) $boardId : null;
+$boardName = isset($boardName) ? $boardName : 'Shooting sans titre';
+$state = isset($state) ? $state : null;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Shooting Board</title>
+  <title><?= htmlspecialchars($boardName) ?> — Shooting Board</title>
   <link rel="stylesheet" href="/css/styles.css"/>
+  <script>
+    window.__BOARD_ID__ = <?= $boardId ? (int) $boardId : 'null' ?>;
+    window.__BOARD_NAME__ = <?= json_encode($boardName) ?>;
+    window.__BOARD_STATE__ = <?= $state !== null ? json_encode($state) : 'null' ?>;
+  </script>
 </head>
 <body>
   <div id="app">
     <div class="topbar">
       <span class="logo">Shooting Board</span>
-      <input class="sname" value="Shooting sans titre" aria-label="Nom du projet"/>
+      <a href="index.php?action=dashboard" class="btn btn-sm">Tableau de bord</a>
+      <input class="sname" id="sname" value="<?= htmlspecialchars($boardName) ?>" aria-label="Nom du projet"/>
+      <button type="button" class="btn btn-sm btn-w" id="save-board-btn">Sauvegarder</button>
       <a href="index.php?action=logout" class="btn btn-sm" style="margin-left: auto;">Déconnexion</a>
     </div>
 

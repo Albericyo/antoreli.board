@@ -18,7 +18,8 @@ import {
   reorderClips,
   setFilter,
   detectSimilars,
-  openViewer as modelOpenViewer
+  openViewer as modelOpenViewer,
+  getStateForSave
 } from './model.js';
 import {
   renderCats,
@@ -397,4 +398,32 @@ export function bindEvents() {
   document.querySelector('.vpl')?.addEventListener('click', () => vNav(-1));
   document.querySelector('.vpr')?.addEventListener('click', () => vNav(1));
   document.getElementById('cpbtn')?.addEventListener('click', toggleCV);
+
+  const saveBoardBtn = document.getElementById('save-board-btn');
+  if (saveBoardBtn && typeof window.__BOARD_ID__ === 'number') {
+    saveBoardBtn.addEventListener('click', async () => {
+      const sname = document.getElementById('sname');
+      const payload = {
+        id: window.__BOARD_ID__,
+        name: sname ? sname.value.trim() || 'Shooting sans titre' : 'Shooting sans titre',
+        state: getStateForSave()
+      };
+      try {
+        const res = await fetch('index.php?action=save-board', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.ok) {
+          saveBoardBtn.textContent = 'Sauvegardé ✓';
+          setTimeout(() => { saveBoardBtn.textContent = 'Sauvegarder'; }, 2000);
+        } else {
+          alert(data.error || 'Erreur lors de la sauvegarde.');
+        }
+      } catch (err) {
+        alert('Erreur lors de la sauvegarde.');
+      }
+    });
+  }
 }

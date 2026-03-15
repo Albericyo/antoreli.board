@@ -14,7 +14,7 @@ Application web pour gérer des plans vidéo : import de reels, découpe avec ma
 
 Une version **PHP MVC** avec authentification est disponible : document root `public/`, login par session, base MySQL. Les métadonnées du board restent en localStorage côté client ; la base sert aux utilisateurs (connexion).
 
-**Utilisation sur Windows** : placez le projet sur un disque local (`C:\`, `D:\`, etc.), double-cliquez sur `start.bat`. Aucun WSL requis.
+L’application se lance depuis le dossier `public/` (voir « Version PHP » ci-dessous).
 
 ---
 
@@ -71,47 +71,9 @@ Les **catégories** et **clips** (noms, IN/OUT, catégories, validations) sont s
 
 ## Démarrage en local
 
-L’application utilise des **modules ES6** (`import`/`export`). Le navigateur impose qu’ils soient servis via HTTP (pas `file://`).
+L’application (PHP MVC + login) doit être servie depuis le dossier **`public/`**. Les modules ES6 côté client imposent HTTP (pas `file://`).
 
-### Démarrage rapide (scripts fournis)
-
-| Fichier   | Usage                                                                 |
-|-----------|-----------------------------------------------------------------------|
-| `start.bat` | **Windows** : double-clic sur `start.bat` → serveur + navigateur. Placez le projet sur `C:\` ou `D:\` (pas de WSL requis) |
-| `start.sh`  | **Linux / Mac** : `./start.sh` ou `bash start.sh` dans un terminal     |
-
-**Prérequis Windows** : Python ([python.org](https://python.org)) ou Node.js ([nodejs.org](https://nodejs.org)). `start.bat` essaie Python d’abord, puis Node.js automatiquement.
-
-### Démarrage manuel
-
-1. **Placer le projet** sur votre disque (ex. `C:\Users\Vous\antoreli` ou `D:\projets\antoreli`)
-
-2. **Lancer un serveur HTTP local**
-
-**Python 3 :**
-```bash
-python3 -m http.server 8765
-```
-
-**Node.js (via npx) :**
-```bash
-npx serve
-```
-
-**PHP :**
-```bash
-php -S localhost:8765
-```
-
-3. **Ouvrir dans le navigateur**
-
-```
-http://localhost:8765
-```
-
-Avec `serve` (Node.js), le port par défaut est souvent 3000 : `http://localhost:3000`.
-
-### Version PHP (MVC + login + MySQL)
+### Démarrage (PHP + MySQL)
 
 1. **Créer la base** : importer `database/schema.sql` dans MySQL.
 2. **Configurer** : copier `.env.example` en `.env` à la racine du projet puis éditer `.env` (DB_HOST, DB_NAME, DB_USER, DB_PASS).
@@ -124,14 +86,10 @@ Avec `serve` (Node.js), le port par défaut est souvent 3000 : `http://localhost
    cd public && php -S localhost:8765
    ```
    Ou configurer Apache/Nginx avec document root = `public/`.
-5. **Ouvrir** `http://localhost:8765` → page de login, puis accès au board.
+5. **Ouvrir** `http://localhost:8765` → page de login, puis tableau de bord.
 
-Routes : `?action=login` (connexion), `?action=logout` (déconnexion), pas de paramètre ou `?action=board` (app protégée).
-
-### Alternative (fichier local)
-
-Sur certains navigateurs (Chrome, Edge), vous pouvez ouvrir `index.html` directement avec `file://`.  
-Firefox et Safari bloquent généralement l’exécution des modules ES6 en `file://`, le serveur local reste donc recommandé.
+**Tableau de bord** : liste des shooting boards, création, ouverture, marquer terminé, supprimer.  
+Routes : `?action=login`, `?action=logout`, `?action=dashboard` (accueil après login), `?action=board&id=X` (éditer un board), `?action=new-board` (POST), `?action=delete-board`, `?action=toggle-finished`.
 
 ---
 
@@ -145,16 +103,14 @@ antoreli/
 │   └── js/                 # App board (app.js, model, view, controller, storage, utils)
 ├── src/
 │   ├── Controller/         # AuthController, BoardController
-│   ├── Model/              # User
-│   ├── View/               # auth/login.php, board/index.php
+│   ├── Model/              # User, Board
+│   ├── View/               # auth/login.php, board/dashboard.php, board/index.php
 │   ├── Core/               # Router, Database, Session
 │   └── config/database.php
 ├── database/
-│   ├── schema.sql          # Création BDD + table users
+│   ├── schema.sql          # BDD : users, boards
 │   └── create_user.php     # CLI : créer un utilisateur
-├── .env.example        # Exemple pour .env (à la racine)
-├── index.html              # Ancien point d'entrée (sans auth)
-├── start.bat / start.sh
+├── .env.example            # Exemple pour .env (à la racine)
 └── README.md
 ```
 
