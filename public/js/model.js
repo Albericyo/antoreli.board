@@ -124,21 +124,33 @@ export function catMatch(c, cat) {
 }
 
 /**
- * Envoie un fichier vidéo au serveur et retourne { id, name, url }. Nécessite window.__BOARD_ID__.
+ * Envoie un fichier vidéo au serveur et retourne { id, name, url }. Les reels sont enregistrés en base (table reels + fichier sur disque).
  * @param {File} file
  * @returns {Promise<{ id: number, name: string, url: string }>}
  */
 export function uploadReel(file) {
   const boardId = typeof window !== 'undefined' && window.__BOARD_ID__;
-  if (!boardId) return Promise.reject(new Error('Aucun board'));
+  if (!boardId || (typeof boardId === 'number' && boardId < 1)) {
+    return Promise.reject(new Error('Ouvrez un board pour enregistrer les vidéos.'));
+  }
   const form = new FormData();
   form.append('file', file);
   form.append('board_id', String(boardId));
-  return fetch('index.php?action=upload-reel', { method: 'POST', body: form })
-    .then((res) => res.json())
-    .then((data) => {
+  const url = new URL('index.php?action=upload-reel', window.location.href).href;
+  return fetch(url, { method: 'POST', body: form })
+    .then(async (res) => {
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        if (!res.ok) throw new Error(res.status === 403 ? 'Session expirée. Reconnectez-vous.' : 'Erreur serveur lors de l\'upload.');
+        throw new Error('Réponse serveur invalide.');
+      }
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'upload.');
       if (data.error) throw new Error(data.error);
-      return { id: data.id, name: data.name, url: data.url };
+      if (data.id == null || !data.name || !data.url) throw new Error('Réponse serveur incomplète.');
+      return { id: Number(data.id), name: data.name, url: data.url };
     });
 }
 

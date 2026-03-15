@@ -15,58 +15,66 @@ class BoardController
 
     public function uploadReel(): void
     {
+        header('Content-Type: application/json; charset=utf-8');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonError('Méthode non autorisée');
+            echo json_encode(['error' => 'Méthode non autorisée']);
             return;
         }
         if (!Session::isLoggedIn()) {
-            $this->jsonError('Non authentifié');
+            echo json_encode(['error' => 'Non authentifié']);
             return;
         }
-        $boardId = isset($_POST['board_id']) ? (int) $_POST['board_id'] : (isset($_GET['board_id']) ? (int) $_GET['board_id'] : 0);
-        if (!$boardId || !Board::find($boardId)) {
-            $this->jsonError('Board invalide');
-            return;
-        }
-        if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            $this->jsonError('Fichier manquant ou erreur d\'upload');
-            return;
-        }
-        $file = $_FILES['file'];
-        $mime = $file['type'] ?? '';
-        if (!in_array($mime, self::ALLOWED_MIMES, true)) {
-            $this->jsonError('Type de fichier non autorisé (MP4, MOV, WebM uniquement)');
-            return;
-        }
-        if ($file['size'] > self::MAX_REEL_SIZE) {
-            $this->jsonError('Fichier trop volumineux (max 100 Mo)');
-            return;
-        }
-        $baseName = preg_replace('/\.[^.]+$/', '', $file['name']);
-        $baseName = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $baseName) ?: 'reel';
-        $ext = match ($mime) {
-            'video/quicktime' => 'mov',
-            'video/webm' => 'webm',
-            default => 'mp4',
-        };
-        $storageDir = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . '/storage/reels/' . $boardId;
-        if (!is_dir($storageDir)) {
-            if (!@mkdir($storageDir, 0755, true)) {
-                $this->jsonError('Impossible de créer le dossier de stockage');
+        try {
+            $boardId = isset($_POST['board_id']) ? (int) $_POST['board_id'] : (isset($_GET['board_id']) ? (int) $_GET['board_id'] : 0);
+            if (!$boardId || !Board::find($boardId)) {
+                echo json_encode(['error' => 'Board invalide']);
                 return;
             }
+            if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+                $err = $_FILES['file']['error'] ?? UPLOAD_ERR_OK;
+                $msg = $err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE
+                    ? 'Fichier trop volumineux'
+                    : 'Fichier manquant ou erreur d\'upload';
+                echo json_encode(['error' => $msg]);
+                return;
+            }
+            $file = $_FILES['file'];
+            $mime = $file['type'] ?? '';
+            if (!in_array($mime, self::ALLOWED_MIMES, true)) {
+                echo json_encode(['error' => 'Type non autorisé (MP4, MOV, WebM uniquement)']);
+                return;
+            }
+            if ($file['size'] > self::MAX_REEL_SIZE) {
+                echo json_encode(['error' => 'Fichier trop volumineux (max 100 Mo)']);
+                return;
+            }
+            $baseName = preg_replace('/\.[^.]+$/', '', $file['name']);
+            $baseName = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $baseName) ?: 'reel';
+            $ext = match ($mime) {
+                'video/quicktime' => 'mov',
+                'video/webm' => 'webm',
+                default => 'mp4',
+            };
+            $storageDir = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . '/storage/reels/' . $boardId;
+            if (!is_dir($storageDir)) {
+                if (!@mkdir($storageDir, 0755, true)) {
+                    echo json_encode(['error' => 'Impossible de créer le dossier de stockage']);
+                    return;
+                }
+            }
+            $fileName = uniqid('', true) . '_' . substr($baseName, 0, 80) . '.' . $ext;
+            $filePath = 'reels/' . $boardId . '/' . $fileName;
+            $absPath = $storageDir . '/' . $fileName;
+            if (!move_uploaded_file($file['tmp_name'], $absPath)) {
+                echo json_encode(['error' => 'Erreur lors de l\'enregistrement du fichier']);
+                return;
+            }
+            $id = Reel::create($boardId, $baseName, $filePath, $mime);
+            $url = 'index.php?action=stream-reel&id=' . $id;
+            echo json_encode(['id' => $id, 'name' => $baseName, 'url' => $url]);
+        } catch (\Throwable $e) {
+            echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);
         }
-        $fileName = uniqid('', true) . '_' . substr($baseName, 0, 80) . '.' . $ext;
-        $filePath = 'reels/' . $boardId . '/' . $fileName;
-        $absPath = $storageDir . '/' . $fileName;
-        if (!move_uploaded_file($file['tmp_name'], $absPath)) {
-            $this->jsonError('Erreur lors de l\'enregistrement du fichier');
-            return;
-        }
-        $id = Reel::create($boardId, $baseName, $filePath, $mime);
-        $url = 'index.php?action=stream-reel&id=' . $id;
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['id' => $id, 'name' => $baseName, 'url' => $url]);
     }
 
     public function streamReel(): void
