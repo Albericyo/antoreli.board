@@ -10,7 +10,13 @@ use App\Model\Reel;
 
 class BoardController
 {
-    private const MAX_REEL_SIZE = 100 * 1024 * 1024; // 100 Mo
+    /** Taille max en octets (défaut 4 Go). À ajuster avec upload_max_filesize / post_max_size sur le serveur. */
+    private static function getMaxReelSize(): int
+    {
+        $mb = isset($_ENV['MAX_UPLOAD_MB']) ? (int) $_ENV['MAX_UPLOAD_MB'] : 4096;
+        return $mb * 1024 * 1024;
+    }
+
     private const ALLOWED_MIMES = ['video/mp4', 'video/quicktime', 'video/webm'];
 
     public function uploadReel(): void
@@ -74,8 +80,9 @@ class BoardController
                 $this->sendUploadError('Type non autorisé (MP4, MOV, WebM uniquement)', 400);
                 return;
             }
-            if ($file['size'] > self::MAX_REEL_SIZE) {
-                $this->sendUploadError('Fichier trop volumineux (max 100 Mo)', 400);
+            if ($file['size'] > self::getMaxReelSize()) {
+                $maxMb = (int) (self::getMaxReelSize() / 1024 / 1024);
+                $this->sendUploadError('Fichier trop volumineux (max ' . $maxMb . ' Mo pour cette config). Augmentez MAX_UPLOAD_MB dans .env et upload_max_filesize / post_max_size sur le serveur.', 400);
                 return;
             }
             $baseName = preg_replace('/\.[^.]+$/', '', $file['name']);

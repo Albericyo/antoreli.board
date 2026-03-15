@@ -63,7 +63,7 @@ $reels = isset($reels) ? $reels : [];
         <label class="upload-label" for="finp">
           <div class="vmsg-icon" style="margin-bottom:8px">+</div>
           <div>Clique ici pour importer une ou plusieurs vidéos</div>
-          <div class="hint">MP4 · MOV · WebM · max 100 Mo par fichier</div>
+          <div class="hint">MP4 · MOV · WebM (plusieurs Go possibles si le serveur est configuré pour)</div>
           <?php if ($boardId): ?>
           <div class="hint">Les vidéos sont enregistrées en base pour ce board.</div>
           <?php endif; ?>

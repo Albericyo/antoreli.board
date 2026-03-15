@@ -102,6 +102,10 @@ Sur beaucoup d’hébergeurs partagés, PHP **ne peut pas créer de dossiers** (
 
 Après cela, l’application pourra enregistrer les vidéos dans `storage/reels/{board_id}/` sans avoir à créer le dossier racine.
 
+#### Vidéos de plusieurs Go (Hostinger)
+
+Pour accepter des fichiers de plusieurs gigaoctets : dans `.env`, définir **`MAX_UPLOAD_MB=4096`** (ou la valeur en Mo voulue). Sur le serveur, créer **`.user.ini`** à la racine du site avec `upload_max_filesize = 4G`, `post_max_size = 4G`, `max_execution_time = 600`. L'upload de plusieurs Go peut prendre longtemps (connexion stable conseillée).
+
 ---
 
 ## Structure du projet
