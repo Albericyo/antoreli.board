@@ -85,6 +85,14 @@ export function rmCat(cat) {
   renderCats();
 }
 
+function setUploadMsg(text, isError = false) {
+  const el = document.getElementById('upload-msg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'upload-msg' + (isError ? ' err' : text ? ' ok' : '');
+  if (text && !isError) setTimeout(() => { el.textContent = ''; el.className = 'upload-msg'; }, 3000);
+}
+
 export async function addFiles(inp) {
   if (!inp?.files || !inp.files.length) return;
   const rawId = typeof window !== 'undefined' ? window.__BOARD_ID__ : null;
@@ -94,17 +102,26 @@ export async function addFiles(inp) {
   if (boardId !== null) {
     const finp = document.getElementById('finp');
     if (finp) finp.disabled = true;
+    setUploadMsg('Import en cours…');
+    let okCount = 0;
     for (const file of files) {
       try {
         const result = await uploadReel(file);
         addReel(result);
+        okCount += 1;
       } catch (err) {
-        alert(err.message || 'Erreur lors de l\'upload.');
+        const msg = (err.message === 'Failed to fetch' || err.message === 'Load failed')
+          ? 'Connexion impossible. Vérifiez le réseau et que l\'application est bien déployée.'
+          : (err.message || 'Erreur lors de l\'upload.');
+        setUploadMsg(msg, true);
+        alert(msg);
       }
     }
     if (finp) finp.disabled = false;
+    if (okCount > 0) setUploadMsg(okCount === 1 ? '1 vidéo enregistrée.' : okCount + ' vidéos enregistrées.');
   } else {
     files.forEach((f) => addReel(f));
+    setUploadMsg('');
   }
   renderReels();
 }
