@@ -90,6 +90,18 @@ L’application (PHP MVC + login) doit être servie depuis le dossier **`public/
 
 Le dossier **`storage/reels/`** est créé automatiquement lors du premier upload ; il est ignoré par git (`.gitignore`).
 
+#### Hébergement partagé (Hostinger, etc.)
+
+Sur beaucoup d’hébergeurs partagés, PHP **ne peut pas créer de dossiers** (restrictions `open_basedir` ou droits). Il faut alors **créer les dossiers à la main** :
+
+1. Via **Gestionnaire de fichiers** (File Manager) ou **FTP**, à la racine du projet (ou au chemin indiqué par `STORAGE_PATH` dans `.env`) :
+   - Créer le dossier **`storage`**
+   - À l’intérieur, créer **`storage/reels`**
+2. Définir les **permissions** : **755** (ou 775 si l’hébergeur le demande) sur `storage` et `storage/reels`.
+3. Optionnel : dans `.env`, définir **`STORAGE_PATH`** avec le chemin **absolu** du dossier storage si vous le placez ailleurs (ex. `/home/u123/domains/monsite.fr/storage`).
+
+Après cela, l’application pourra enregistrer les vidéos dans `storage/reels/{board_id}/` sans avoir à créer le dossier racine.
+
 ---
 
 ## Structure du projet

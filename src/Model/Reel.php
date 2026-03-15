@@ -73,7 +73,7 @@ class Reel
      */
     public static function getAbsolutePath(string $filePath): string
     {
-        $base = defined('PROJECT_ROOT') ? PROJECT_ROOT . '/storage' : dirname(__DIR__, 2) . '/storage';
+        $base = function_exists('get_storage_path') ? get_storage_path() : (defined('PROJECT_ROOT') ? PROJECT_ROOT . '/storage' : dirname(__DIR__, 2) . '/storage');
         return $base . '/' . $filePath;
     }
 

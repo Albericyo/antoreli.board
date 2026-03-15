@@ -73,7 +73,7 @@ class BoardController
             } elseif ($mime === 'video/webm') {
                 $ext = 'webm';
             }
-            $storageDir = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . '/storage/reels/' . $boardId;
+            $storageDir = get_storage_path() . '/reels/' . $boardId;
             if (!is_dir($storageDir)) {
                 if (!@mkdir($storageDir, 0755, true)) {
                     $this->sendUploadError('Impossible de créer le dossier de stockage (droits écriture)', 500, [
@@ -136,7 +136,7 @@ class BoardController
     private function getUploadDebugInfo(?int $boardId = null): array
     {
         $projectRoot = defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2);
-        $storageBase = $projectRoot . '/storage';
+        $storageBase = get_storage_path();
         $reelsDir = $storageBase . '/reels';
         $testDir = $boardId ? $reelsDir . '/' . $boardId : $reelsDir;
         $storageExists = is_dir($storageBase);
