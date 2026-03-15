@@ -16,16 +16,27 @@ class BoardController
     public function uploadReel(): void
     {
         ob_start();
-        header('Content-Type: application/json; charset=utf-8');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->sendUploadError('Méthode non autorisée', 400);
-            return;
-        }
-        if (!Session::isLoggedIn()) {
-            $this->sendUploadError('Non authentifié', 403);
-            return;
-        }
         try {
+            header('Content-Type: application/json; charset=utf-8');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->sendUploadError('Méthode non autorisée', 400);
+                return;
+            }
+            if (!Session::isLoggedIn()) {
+                $this->sendUploadError('Non authentifié', 403);
+                return;
+            }
+            // Quand la requête dépasse post_max_size, PHP peut laisser $_POST et $_FILES vides
+            $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+            if (empty($_POST) && empty($_FILES) && $contentLength > 0) {
+                $this->sendUploadError(
+                    'Requête trop volumineuse ou fichier non reçu. Augmentez post_max_size et upload_max_filesize dans PHP (ex. 128M).',
+                    400,
+                    ['content_length' => $contentLength, 'post_max_size' => ini_get('post_max_size'), 'upload_max_filesize' => ini_get('upload_max_filesize')]
+                );
+                return;
+            }
+            try {
             $boardId = isset($_POST['board_id']) ? (int) $_POST['board_id'] : (isset($_GET['board_id']) ? (int) $_GET['board_id'] : 0);
             if (!$boardId || !Board::find($boardId)) {
                 $this->sendUploadError('Board invalide', 400);
@@ -37,6 +48,8 @@ class BoardController
                     'post_keys' => array_keys($_POST),
                     'files_keys' => isset($_FILES['file']) ? array_keys($_FILES['file']) : [],
                     'upload_error' => $_FILES['file']['error'] ?? null,
+                    'post_max_size' => ini_get('post_max_size'),
+                    'upload_max_filesize' => ini_get('upload_max_filesize'),
                 ]);
                 return;
             }
@@ -108,6 +121,20 @@ class BoardController
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
+        }
+        } catch (\Throwable $outer) {
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+            $debug = ($_ENV['APP_DEBUG'] ?? '') === '1' || ($_ENV['APP_DEBUG'] ?? '') === 'true'
+                ? ['exception' => get_class($outer), 'file' => $outer->getFile(), 'line' => $outer->getLine()]
+                : null;
+            echo json_encode([
+                'error' => 'Erreur serveur: ' . $outer->getMessage(),
+                'debug' => $debug,
+            ], JSON_UNESCAPED_UNICODE);
         }
     }
 
