@@ -50,11 +50,12 @@ class BoardController
             }
             $baseName = preg_replace('/\.[^.]+$/', '', $file['name']);
             $baseName = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $baseName) ?: 'reel';
-            $ext = match ($mime) {
-                'video/quicktime' => 'mov',
-                'video/webm' => 'webm',
-                default => 'mp4',
-            };
+            $ext = 'mp4';
+            if ($mime === 'video/quicktime') {
+                $ext = 'mov';
+            } elseif ($mime === 'video/webm') {
+                $ext = 'webm';
+            }
             $storageDir = (defined('PROJECT_ROOT') ? PROJECT_ROOT : dirname(__DIR__, 2)) . '/storage/reels/' . $boardId;
             if (!is_dir($storageDir)) {
                 if (!@mkdir($storageDir, 0755, true)) {
