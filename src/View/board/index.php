@@ -62,6 +62,9 @@ $reels = isset($reels) ? $reels : [];
           <div class="vmsg-icon" style="margin-bottom:8px">+</div>
           <div>Clique ici pour importer une ou plusieurs vidéos</div>
           <div class="hint">MP4 · MOV · WebM</div>
+          <?php if ($boardId): ?>
+          <div class="hint">Les vidéos sont enregistrées en base pour ce board.</div>
+          <?php endif; ?>
         </label>
         <input type="file" id="finp" accept="video/*" multiple class="input-hidden"/>
       </div>

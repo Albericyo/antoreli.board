@@ -129,15 +129,16 @@ export function catMatch(c, cat) {
  * @returns {Promise<{ id: number, name: string, url: string }>}
  */
 export function uploadReel(file) {
-  const boardId = typeof window !== 'undefined' && window.__BOARD_ID__;
-  if (!boardId || (typeof boardId === 'number' && boardId < 1)) {
+  const rawId = typeof window !== 'undefined' ? window.__BOARD_ID__ : null;
+  const boardId = rawId != null && Number(rawId) >= 1 ? Number(rawId) : null;
+  if (boardId === null) {
     return Promise.reject(new Error('Ouvrez un board pour enregistrer les vidéos.'));
   }
   const form = new FormData();
   form.append('file', file);
   form.append('board_id', String(boardId));
   const url = new URL('index.php?action=upload-reel', window.location.href).href;
-  return fetch(url, { method: 'POST', body: form })
+  return fetch(url, { method: 'POST', body: form, credentials: 'same-origin' })
     .then(async (res) => {
       const text = await res.text();
       let data;

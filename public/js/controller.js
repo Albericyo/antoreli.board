@@ -87,10 +87,11 @@ export function rmCat(cat) {
 
 export async function addFiles(inp) {
   if (!inp?.files || !inp.files.length) return;
-  const boardId = typeof window !== 'undefined' && window.__BOARD_ID__;
+  const rawId = typeof window !== 'undefined' ? window.__BOARD_ID__ : null;
+  const boardId = rawId != null && Number(rawId) >= 1 ? Number(rawId) : null;
   const files = Array.from(inp.files);
   inp.value = '';
-  if (boardId) {
+  if (boardId !== null) {
     const finp = document.getElementById('finp');
     if (finp) finp.disabled = true;
     for (const file of files) {
