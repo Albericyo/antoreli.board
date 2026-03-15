@@ -149,6 +149,12 @@ export function uploadReel(file) {
   if (boardId === null) {
     return Promise.reject(new Error('Ouvrez un board pour enregistrer les vidéos.'));
   }
+  const MAX_REEL_SIZE = 100 * 1024 * 1024; // 100 Mo (aligné avec le serveur)
+  if (file.size > MAX_REEL_SIZE) {
+    return Promise.reject(new Error(
+      'Fichier trop volumineux (' + (Math.round(file.size / 1024 / 1024)) + ' Mo). Taille max : 100 Mo. Réduisez la vidéo ou uploadez un fichier plus petit.'
+    ));
+  }
   const form = new FormData();
   form.append('file', file);
   form.append('board_id', String(boardId));
