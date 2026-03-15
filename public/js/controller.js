@@ -20,7 +20,8 @@ import {
   setFilter,
   detectSimilars,
   openViewer as modelOpenViewer,
-  getStateForSave
+  getStateForSave,
+  saveNow
 } from './model.js';
 import {
   renderCats,
@@ -452,6 +453,10 @@ export function bindEvents() {
 
   document.addEventListener('dragend', () => {
     document.querySelectorAll('.bcol').forEach((c) => c.classList.remove('bcol--drag-over'));
+  });
+
+  document.querySelectorAll('a[href*="action=dashboard"]').forEach((a) => {
+    a.addEventListener('click', () => saveNow());
   });
 
   document.getElementById('nb-import')?.addEventListener('click', () => go('import'));

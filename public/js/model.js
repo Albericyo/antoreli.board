@@ -27,32 +27,69 @@ function persist() {
     if (persistToServerTimeout) clearTimeout(persistToServerTimeout);
     persistToServerTimeout = setTimeout(() => {
       persistToServerTimeout = null;
-      const sname = document.getElementById('sname');
-      const name = sname ? sname.value.trim() || 'Shooting sans titre' : 'Shooting sans titre';
-      fetch('index.php?action=save-board', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: window.__BOARD_ID__, name, state: data })
-      }).catch(() => {});
-    }, 800);
+      sendStateToServer(data);
+    }, 500);
   }
 }
 
+function sendStateToServer(data) {
+  if (typeof window === 'undefined' || typeof window.__BOARD_ID__ !== 'number') return;
+  const sname = document.getElementById('sname');
+  const name = sname ? sname.value.trim() || 'Shooting sans titre' : 'Shooting sans titre';
+  fetch('index.php?action=save-board', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: window.__BOARD_ID__, name, state: data })
+  }).catch(() => {});
+}
+
+/** Sauvegarde immédiate sur le serveur (ex. avant de quitter la page). */
+export function saveNow() {
+  if (persistToServerTimeout) {
+    clearTimeout(persistToServerTimeout);
+    persistToServerTimeout = null;
+  }
+  const data = {
+    cats: state.cats,
+    clips: state.clips.map(({ id, rid, rname, in: i, out: o, name, cat, sim, done }) => ({
+      id, rid, rname, in: i, out: o, name, cat, sim, done
+    }))
+  };
+  storage.save(data);
+  if (typeof window !== 'undefined' && typeof window.__BOARD_ID__ === 'number') {
+    sendStateToServer(data);
+  }
+}
+
+function saveOnPageHide() {
+  if (typeof window === 'undefined' || typeof window.__BOARD_ID__ !== 'number') return;
+  const data = getStateForSave();
+  const sname = document.getElementById('sname');
+  const name = sname ? sname.value.trim() || 'Shooting sans titre' : 'Shooting sans titre';
+  const payload = JSON.stringify({ id: window.__BOARD_ID__, name, state: data });
+  const url = new URL('index.php?action=save-board', window.location.href).href;
+  navigator.sendBeacon(url, new Blob([payload], { type: 'application/json' }));
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', saveOnPageHide);
+}
+
 export function loadFromStorage() {
-  if (typeof window !== 'undefined' && window.__BOARD_STATE__) {
+  if (typeof window !== 'undefined' && window.__BOARD_STATE__ != null) {
     const data = window.__BOARD_STATE__;
-    if (Array.isArray(data.cats) && data.cats.length) state.cats = data.cats;
-    if (Array.isArray(data.clips)) {
-      state.clips = data.clips.map((c) => ({ ...c, rsrc: null }));
-    }
-    if (Array.isArray(window.__BOARD_REELS__) && window.__BOARD_REELS__.length) {
-      state.reels = window.__BOARD_REELS__.map((r) => ({ id: r.id, name: r.name, src: r.url }));
-      state.clips.forEach((c) => {
-        const reel = state.reels.find((r) => r.id === c.rid || r.id === Number(c.rid));
-        if (reel) c.rsrc = reel.src;
-      });
-      if (!state.activeId && state.reels.length) state.activeId = state.reels[0].id;
-    }
+    state.cats = Array.isArray(data.cats) ? data.cats : [];
+    state.clips = Array.isArray(data.clips)
+      ? data.clips.map((c) => ({ ...c, rsrc: null }))
+      : [];
+    state.reels = Array.isArray(window.__BOARD_REELS__)
+      ? window.__BOARD_REELS__.map((r) => ({ id: r.id, name: r.name, src: r.url }))
+      : [];
+    state.clips.forEach((c) => {
+      const reel = state.reels.find((r) => r.id === c.rid || r.id === Number(c.rid));
+      if (reel) c.rsrc = reel.src;
+    });
+    state.activeId = state.reels.length ? (state.activeId && state.reels.some((r) => r.id === state.activeId || r.id === Number(state.activeId)) ? state.activeId : state.reels[0].id) : null;
     return;
   }
   const data = storage.load();
