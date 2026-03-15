@@ -9,30 +9,39 @@ use PDO;
 
 class Reel
 {
-    public static function create(int $boardId, string $name, string $filePath, string $mimeType = 'video/mp4'): int
+    /**
+     * Crée un reel avec le contenu vidéo en BLOB (stream pour limiter la mémoire).
+     *
+     * @param resource $contentStream Ressource de type stream (ex. fopen du fichier temporaire d'upload)
+     */
+    public static function create(int $boardId, string $name, string $mimeType, $contentStream): int
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('INSERT INTO reels (board_id, name, file_path, mime_type) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$boardId, $name, $filePath, $mimeType]);
+        $stmt = $pdo->prepare('INSERT INTO reels (board_id, name, mime_type, content) VALUES (?, ?, ?, ?)');
+        $stmt->bindValue(1, $boardId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $name, PDO::PARAM_STR);
+        $stmt->bindValue(3, $mimeType, PDO::PARAM_STR);
+        $stmt->bindParam(4, $contentStream, PDO::PARAM_LOB);
+        $stmt->execute();
         return (int) $pdo->lastInsertId();
     }
 
     public static function findById(int $id): ?array
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT id, board_id, name, file_path, mime_type, created_at FROM reels WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, board_id, name, mime_type, created_at FROM reels WHERE id = ? LIMIT 1');
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
 
     /**
-     * @return array<int, array{id: int, name: string, file_path: string, mime_type: string}>
+     * @return array<int, array{id: int, name: string, mime_type: string}>
      */
     public static function findByBoard(int $boardId): array
     {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare('SELECT id, name, file_path, mime_type FROM reels WHERE board_id = ? ORDER BY created_at ASC');
+        $stmt = $pdo->prepare('SELECT id, name, mime_type FROM reels WHERE board_id = ? ORDER BY created_at ASC');
         $stmt->execute([$boardId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as &$row) {
@@ -41,13 +50,35 @@ class Reel
         return $rows;
     }
 
+    /**
+     * Récupère le flux de contenu (BLOB) pour le stream HTTP.
+     * Utilise une requête non bufferisée + bindColumn LOB pour ne pas charger toute la vidéo en mémoire.
+     *
+     * @return array{stream: resource, mime_type: string, content_length: int}|null
+     */
+    public static function getContentStream(int $id): ?array
+    {
+        $pdo = Database::getConnection();
+        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+        $stmt = $pdo->prepare('SELECT content, mime_type, LENGTH(content) AS content_length FROM reels WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $stmt->bindColumn(1, $stream, PDO::PARAM_LOB);
+        $stmt->bindColumn(2, $mimeType, PDO::PARAM_STR);
+        $stmt->bindColumn(3, $contentLength, PDO::PARAM_INT);
+        $fetched = $stmt->fetch(PDO::FETCH_BOUND);
+        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+        if (!$fetched || !is_resource($stream)) {
+            return null;
+        }
+        return [
+            'stream' => $stream,
+            'mime_type' => $mimeType,
+            'content_length' => (int) $contentLength,
+        ];
+    }
+
     public static function delete(int $id): bool
     {
-        $reel = self::findById($id);
-        if (!$reel) {
-            return false;
-        }
-        self::deleteFileByPath($reel['file_path']);
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('DELETE FROM reels WHERE id = ?');
         $stmt->execute([$id]);
@@ -55,33 +86,12 @@ class Reel
     }
 
     /**
-     * Supprime tous les reels d'un board (fichiers sur disque + lignes). À appeler avant Board::delete si pas de CASCADE.
+     * Supprime tous les reels d'un board (lignes en base uniquement).
      */
     public static function deleteByBoardId(int $boardId): void
     {
-        $reels = self::findByBoard($boardId);
-        foreach ($reels as $reel) {
-            self::deleteFileByPath($reel['file_path']);
-        }
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('DELETE FROM reels WHERE board_id = ?');
         $stmt->execute([$boardId]);
-    }
-
-    /**
-     * Chemin absolu du fichier à partir du file_path relatif (stocké comme "reels/1/xxx.mp4" sous storage/).
-     */
-    public static function getAbsolutePath(string $filePath): string
-    {
-        $base = function_exists('get_storage_path') ? get_storage_path() : (defined('PROJECT_ROOT') ? PROJECT_ROOT . '/storage' : dirname(__DIR__, 2) . '/storage');
-        return $base . '/' . $filePath;
-    }
-
-    private static function deleteFileByPath(string $filePath): void
-    {
-        $abs = self::getAbsolutePath($filePath);
-        if (is_file($abs)) {
-            @unlink($abs);
-        }
     }
 }

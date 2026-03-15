@@ -17,13 +17,14 @@ CREATE TABLE IF NOT EXISTS boards (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Reels : vidéos associées à un board (fichiers sur disque dans storage/reels/{board_id}/).
+-- Reels : vidéos associées à un board (contenu en BLOB, LONGBLOB jusqu'à 4 Go).
+-- MySQL : max_allowed_packet doit être >= taille max d'une vidéo (ex. 256M ou 512M).
 CREATE TABLE IF NOT EXISTS reels (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   board_id INT UNSIGNED NOT NULL,
   name VARCHAR(255) NOT NULL,
-  file_path VARCHAR(512) NOT NULL,
   mime_type VARCHAR(64) NOT NULL DEFAULT 'video/mp4',
+  content LONGBLOB NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_reels_board (board_id),
   CONSTRAINT reels_board_fk FOREIGN KEY (board_id) REFERENCES boards (id) ON DELETE CASCADE

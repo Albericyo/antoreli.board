@@ -87,34 +87,17 @@ class BoardController
             }
             $baseName = preg_replace('/\.[^.]+$/', '', $file['name']);
             $baseName = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $baseName) ?: 'reel';
-            $ext = 'mp4';
-            if ($mime === 'video/quicktime') {
-                $ext = 'mov';
-            } elseif ($mime === 'video/webm') {
-                $ext = 'webm';
-            }
-            $storageDir = get_storage_path() . '/reels/' . $boardId;
-            if (!is_dir($storageDir)) {
-                if (!@mkdir($storageDir, 0755, true)) {
-                    $this->sendUploadError('Impossible de créer le dossier de stockage (droits écriture)', 500, [
-                        'storage_dir' => $storageDir,
-                        'board_id' => $boardId,
-                    ]);
-                    return;
-                }
-            }
-            $fileName = uniqid('', true) . '_' . substr($baseName, 0, 80) . '.' . $ext;
-            $filePath = 'reels/' . $boardId . '/' . $fileName;
-            $absPath = $storageDir . '/' . $fileName;
-            if (!move_uploaded_file($file['tmp_name'], $absPath)) {
-                $this->sendUploadError('Erreur lors de l\'enregistrement du fichier (droits écriture?)', 500, [
-                    'target_path' => $absPath,
-                    'tmp_name' => $file['tmp_name'],
-                    'board_id' => $boardId,
-                ]);
+            $tmpPath = $file['tmp_name'];
+            $stream = fopen($tmpPath, 'rb');
+            if ($stream === false) {
+                $this->sendUploadError('Impossible d\'ouvrir le fichier temporaire', 500, ['board_id' => $boardId]);
                 return;
             }
-            $id = Reel::create($boardId, $baseName, $filePath, $mime);
+            try {
+                $id = Reel::create($boardId, $baseName, $mime, $stream);
+            } finally {
+                fclose($stream);
+            }
             $url = 'index.php?action=stream-reel&id=' . $id;
             if (ob_get_level()) {
                 ob_end_clean();
@@ -244,15 +227,21 @@ class BoardController
             header('HTTP/1.1 404 Not Found');
             exit;
         }
-        $absPath = Reel::getAbsolutePath($reel['file_path']);
-        if (!is_file($absPath)) {
+        $content = Reel::getContentStream($id);
+        if (!$content || $content['content_length'] <= 0) {
             header('HTTP/1.1 404 Not Found');
             exit;
         }
-        header('Content-Type: ' . $reel['mime_type']);
+        header('Content-Type: ' . $content['mime_type']);
         header('Accept-Ranges: bytes');
-        header('Content-Length: ' . filesize($absPath));
-        readfile($absPath);
+        header('Content-Length: ' . $content['content_length']);
+        $stream = $content['stream'];
+        if (is_resource($stream)) {
+            fpassthru($stream);
+            fclose($stream);
+        } else {
+            echo $stream;
+        }
         exit;
     }
 
