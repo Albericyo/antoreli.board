@@ -139,7 +139,8 @@ export function uploadReel(file) {
   form.append('board_id', String(boardId));
   const url = new URL('index.php?action=upload-reel', window.location.href).href;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120000);
+  const timeoutMs = 600000; // 10 min pour grosses vidéos / connexion lente
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, { method: 'POST', body: form, credentials: 'same-origin', signal: controller.signal })
     .then(async (res) => {
       clearTimeout(timeoutId);
